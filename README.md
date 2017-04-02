@@ -1,4 +1,4 @@
-# Sparrow
+# Sparrow [![Build Status](https://travis-ci.org/ropas/sparrow.svg?branch=master)](https://travis-ci.org/ropas/sparrow)
 
 Sparrow is a state-of-the-art static analyzer that aims to verify the absence
 of fatal bugs in C source. Sparrow is designed based on the Abstract Interpretation 

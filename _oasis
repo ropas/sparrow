@@ -19,7 +19,7 @@ PostBuildCommand:
 PostInstallCommand:
   install bin/harmless_unsoundness.py $bindir
   install -d $prefix/etc/sparrow
-  install -D etc/* $prefix/etc/sparrow/
+  install etc/* $prefix/etc/sparrow/
 
 PostCleanCommand:
   rm -f bin/sparrow*
