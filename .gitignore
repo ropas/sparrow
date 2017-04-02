@@ -18,3 +18,9 @@ _build/
 # oasis generated files
 setup.data
 setup.log
+
+# Sparrow binaryies
+bin/sparrow*
+
+# vim swp files
+.*.swp

@@ -1,0 +1,24 @@
+global_static_struct.c 
+To inline : []
+Excluded variable-arguments functions : []
+Excluded recursive functions : []
+Excluded too large functions : []
+#Procs : 2
+#Nodes : 31
+#Nodes in def-use graph : 25
+#Locs on def-use graph : 69
+
+= Alarms =
+1. global_static_struct.c:12 {main} UnProven
+  @str[10] @main-6:  offset: [10, 10], size: [10, 10] UnProven, allocsite: _G_-11
+  @str[10][20] @main-6:  offset: [20, 20], size: [10, 10] UnProven, allocsite: _G_-17
+2. global_static_struct.c:13 {main} UnProven
+  @str[30] @main-7:  offset: [30, 30], size: [10, 10] UnProven, allocsite: _G_-11
+  @str[30][40] @main-7:  offset: [40, 40], size: [10, 10] UnProven, allocsite: _G_-17
+  @str[30][40].charFirst[50] @main-7:  offset: [50, 50], size: [16, 16] UnProven, allocsite: _G_-24
+
+#queries                 : 8
+#queries mod alarm point : 4
+#proven                  : 2
+#unproven                : 2
+#bot-involved            : 0

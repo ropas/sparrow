@@ -1,0 +1,55 @@
+Name: Sparrow
+Version: 0.1
+Synopsis: Static analyzer for C.
+Authors: Programmin Research Laboratory (ROPAS), Seoul National University
+License: BSD-3-clause
+
+Description: Sparrow is a state-of-the-art static analyzer that aims to verify the absence of fatal bugs in C source. 
+Homepage: https://github.com/ropas/sparrow
+
+OASISFormat: 0.4
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+
+PostBuildCommand: 
+  cp main.native bin/sparrow
+  cp vis.native bin/sparrow-vis
+  rm -f main.native vis.native test.native
+
+PostInstallCommand:
+  install bin/harmless_unsoundness.py $bindir
+  install -d $prefix/etc/sparrow
+  install -D etc/* $prefix/etc/sparrow/
+
+PostCleanCommand:
+  rm -f bin/sparrow*
+  rm -f bin/.lymp*
+  rm -f bin/*.pyc
+  rm -f bin/python_log
+
+PostUninstallCommand:
+  rm $bindir/sparrow*
+  rm $bindir/harmless_unsoundness.py
+  rm -rf $prefix/etc/sparrow
+
+Executable "sparrow"
+  Path: src/core
+  MainIs: main.ml
+  CompiledObject: best
+
+Executable "sparrow-vis"
+  Path: src/core
+  MainIs: vis.ml
+  CompiledObject: best
+
+Executable "test"
+  Path: test
+  MainIs: test.ml
+  Install: false
+  Build$: flag(tests)
+  CompiledObject: best
+
+Test "main"
+  TestTools: sparrow
+  WorkingDirectory: test
+  Command: $test

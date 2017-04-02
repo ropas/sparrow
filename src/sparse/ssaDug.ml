@@ -1,0 +1,420 @@
+(***********************************************************************)
+(*                                                                     *)
+(* Copyright (c) 2007-present.                                         *)
+(* Programming Research Laboratory (ROPAS), Seoul National University. *)
+(* All rights reserved.                                                *)
+(*                                                                     *)
+(* This software is distributed under the term of the BSD license.     *)
+(* See the LICENSE file for details.                                   *)
+(*                                                                     *)
+(***********************************************************************)
+open Vocab
+open Yojson.Safe
+open Global
+open IntraCfg
+open InterCfg
+open BasicDom
+
+module type S = 
+sig
+  module AccessAnalysis : AccessAnalysis.S
+  module DUGraph : Dug.S
+  module PowLoc : PowDom.S
+  type node = BasicDom.Node.t
+  type loc
+  val make              : ?skip_nodes : BasicDom.Node.t BatSet.t -> Global.t * AccessAnalysis.t * PowLoc.t -> DUGraph.t
+  val to_json_intra     : DUGraph.t -> AccessAnalysis.t -> Yojson.Safe.json
+  val to_json_inter     : DUGraph.t -> AccessAnalysis.t -> Yojson.Safe.json
+end
+
+module Make (DUGraph : Dug.S) (AccessAnalysis: AccessAnalysis.S 
+  with type Loc.t = DUGraph.Loc.t and type PowLoc.t = DUGraph.PowLoc.t) =
+struct
+  module DUGraph = DUGraph
+  module AccessAnalysis = AccessAnalysis
+  type node = BasicDom.Node.t
+  module Loc = DUGraph.Loc
+  module PowLoc = DUGraph.PowLoc
+  module LocMap = BatMap.Make(Loc)
+  module NodeMap = BatMap.Make(Node)
+  module IntraNodeMap = BatMap.Make(IntraCfg.Node)
+  module IntraNodeSet = IntraCfg.NodeSet
+  type loc = Loc.t
+
+  (** Def-use graph construction *)
+  module Access = AccessAnalysis.Access
+  type phi_points = PowLoc.t NodeMap.t
+  type access_map = PowLoc.t IntraNodeMap.t
+  type access_map_inv = IntraNodeSet.t LocMap.t
+
+  let get_ordinary_defs : AccessAnalysis.t -> node -> PowLoc.t 
+  =fun acc_info node -> Access.defof (AccessAnalysis.get_access acc_info node)
+
+  let get_ordinary_uses : AccessAnalysis.t -> node -> PowLoc.t 
+  =fun acc_info node -> Access.useof (AccessAnalysis.get_access acc_info node)
+
+  let get_single_defs : AccessAnalysis.t -> PowLoc.t
+  =fun acc_info -> AccessAnalysis.get_single_defs (AccessAnalysis.get_defs_of acc_info)
+
+  let get_def_points_of : AccessAnalysis.t -> loc -> PowNode.t
+  =fun acc_info x ->
+    try AccessAnalysis.LocMap.find x (AccessAnalysis.get_defs_of acc_info)
+    with _ -> PowNode.empty
+
+  let get_use_points_of : AccessAnalysis.t -> loc -> PowNode.t
+  =fun acc_info x -> 
+    try AccessAnalysis.LocMap.find x (AccessAnalysis.get_uses_of acc_info)
+    with _ -> PowNode.empty
+
+  let locals_of_function : AccessAnalysis.t -> pid -> PowLoc.t
+  =fun acc_info pid -> AccessAnalysis.get_access_local acc_info pid
+
+  let locals_of_program : AccessAnalysis.t -> PowLoc.t
+  =fun acc_info -> AccessAnalysis.get_access_local_program acc_info 
+
+  let use_table = Hashtbl.create 10000
+  let def_table = Hashtbl.create 10000
+  let def_wo_local_table = Hashtbl.create 10000
+  let access_table = Hashtbl.create 10000
+  let access_wo_local_table = Hashtbl.create 10000
+
+  let uses_of_function : AccessAnalysis.t -> pid -> PowLoc.t -> PowLoc.t
+  =fun acc_info pid locset -> 
+    try
+      Hashtbl.find use_table pid 
+    with _ -> 
+      let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
+      let locset = PowLoc.inter locset uses in
+      Hashtbl.add use_table pid locset;
+      locset
+
+  let defs_of_function : Global.t -> AccessAnalysis.t -> pid -> PowLoc.t -> PowLoc.t
+  =fun global acc_info pid locset -> 
+    try
+      Hashtbl.find def_table pid 
+    with _ -> 
+      let locset = 
+        if Global.is_rec pid global then
+          let defs = Access.defof (AccessAnalysis.get_access_reach acc_info pid) in
+          PowLoc.inter locset defs
+        else 
+          let defs = Access.defof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
+          PowLoc.inter locset defs
+      in
+      Hashtbl.add def_table pid locset;
+      locset
+
+  let access_of_function : Global.t -> AccessAnalysis.t -> pid -> PowLoc.t -> PowLoc.t
+  =fun global acc_info pid locset ->
+    try
+      Hashtbl.find access_table pid 
+    with _ -> 
+      let locset = 
+        if Global.is_rec pid global then
+          let defs = Access.defof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
+          let uses = Access.useof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
+          let access = PowLoc.union defs uses in
+          PowLoc.inter locset access
+        else 
+          let defs = Access.defof (AccessAnalysis.get_access_reach acc_info pid) in
+          let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
+          let access = PowLoc.union defs uses in
+          PowLoc.inter locset access
+      in
+      Hashtbl.add access_table pid locset;
+      locset
+
+  (* TODO: filter local variables *)
+  let get_local_locations : Global.t -> AccessAnalysis.t -> pid -> PowLoc.t
+  =fun global acc_info pid -> AccessAnalysis.get_access_local acc_info pid
+
+  (* locations considered as being used in the given node *)
+  let lhsof : Global.t * AccessAnalysis.t -> node -> PowLoc.t -> PowLoc.t 
+  =fun (global,acc_info) node locset -> 
+    let (pid,cfgnode) = Node.get_pid node, Node.get_cfgnode node in
+    let ordinary_defs = get_ordinary_defs acc_info node in
+    (* entry defines access(f) *)
+    let defs_at_entry = 
+      if IntraCfg.is_entry cfgnode 
+      then access_of_function global acc_info pid locset
+      else PowLoc.empty in
+    (* return nodes define defs(callees) *)
+    let defs_at_return =  
+      if InterCfg.is_returnnode node global.icfg then
+        ProcSet.fold (fun callee ->
+          PowLoc.union (defs_of_function global acc_info callee locset)
+        ) (InterCfg.get_callees (InterCfg.callof node global.icfg) global.icfg) PowLoc.empty
+      else PowLoc.empty
+    in
+      PowLoc.union ordinary_defs (PowLoc.union defs_at_entry defs_at_return)
+
+  (* locations considered as being defined in the given node *)
+  let rec rhsof : Global.t * AccessAnalysis.t -> node -> PowLoc.t -> PowLoc.t
+  =fun (global,acc_info) node locset -> 
+    let (pid,cfgnode) = Node.get_pid node, Node.get_cfgnode node in
+    let ordinary_uses = get_ordinary_uses acc_info node in
+    (* exit uses defs(f) *)
+    let uses_at_exit = 
+      if IntraCfg.is_exit cfgnode 
+      then defs_of_function global acc_info pid locset
+      else PowLoc.empty in
+    (* return node inside recursive functions uses local variables of pid *)
+    let uses_at_rec_return = 
+      if InterCfg.is_returnnode node global.icfg && Global.is_rec pid global then
+        get_local_locations global acc_info pid
+      else PowLoc.empty in
+    (* return node uses defined variables(e.g. arguments) of call node *)
+    let uses_at_return1 =
+      if InterCfg.is_returnnode node global.icfg then
+        lhsof (global, acc_info) (InterCfg.callof node global.icfg) locset
+      else PowLoc.empty in
+    (* return node uses not-localized variables of call node *)
+    let uses_at_return2 =
+      if InterCfg.is_returnnode node global.icfg then
+        let call_node = InterCfg.callof node global.icfg in
+        let callees = InterCfg.get_callees call_node global.icfg in
+        let defs_of_callees =
+          let add_defs callee =
+            PowLoc.union (defs_of_function global acc_info callee locset) in
+          ProcSet.fold add_defs callees PowLoc.empty in
+        let add_not_defined callee =
+          let defs = defs_of_function global acc_info callee locset in
+          PowLoc.union (PowLoc.diff defs_of_callees defs) in
+        ProcSet.fold add_not_defined callees PowLoc.empty
+      else PowLoc.empty in
+    (* call nodes uses access(callees) *)
+    let uses_at_call = 
+      if InterCfg.is_callnode node global.icfg then
+        ProcSet.fold (fun callee ->
+          PowLoc.union (access_of_function global acc_info callee locset)
+        ) (InterCfg.get_callees node global.icfg) PowLoc.empty
+      else PowLoc.empty 
+    in
+    list_fold PowLoc.union 
+      [ ordinary_uses; uses_at_exit; uses_at_call; uses_at_rec_return;
+        uses_at_return1; uses_at_return2 ]
+      PowLoc.empty
+ 
+  let prepare_defs_uses : Global.t * AccessAnalysis.t * PowLoc.t -> IntraCfg.t -> access_map * access_map
+  =fun (global,acc_info,locset) cfg -> 
+    let collect f = 
+      List.fold_left (fun m node -> 
+        IntraNodeMap.add node (f (global,acc_info) (Node.make (IntraCfg.get_pid cfg) node) locset) m
+      ) IntraNodeMap.empty (IntraCfg.nodesof cfg) in
+      (collect lhsof, collect rhsof)
+   
+  let prepare_defnodes : Global.t * AccessAnalysis.t -> IntraCfg.t -> access_map -> access_map_inv
+  =fun (global,acc_info) cfg defs_of ->
+    try
+      list_fold (fun node ->
+          PowLoc.fold (fun addr map ->
+              let set = try LocMap.find addr map with _ -> IntraNodeSet.empty in
+              LocMap.add addr (IntraNodeSet.add node set) map
+            ) (IntraNodeMap.find node defs_of))
+        (IntraCfg.nodesof cfg)
+        LocMap.empty
+    with _ -> failwith "Dug.prepare_defnodes" 
+  
+  let get_phi_points cfg acc_info (defs_of,uses_of,defnodes_of) : phi_points =
+    let pid = IntraCfg.get_pid cfg in
+    let variables = LocMap.fold (fun k _ -> PowLoc.add k) defnodes_of PowLoc.empty in
+    let map_set_add k v map = 
+      try NodeMap.add k (PowLoc.add v (NodeMap.find k map)) map
+      with _ -> NodeMap.add k (PowLoc.singleton v) map in
+    let rec iterate_node w var itercount hasalready work joinpoints = 
+      match w with
+        | node::rest ->
+            let (rest,hasalready,work,joinpoints) = 
+              IntraNodeSet.fold (fun y (rest,hasalready,work,joinpoints) ->
+                  if IntraNodeMap.find y hasalready < itercount then
+                    let joinpoints = map_set_add (Node.make pid y) var joinpoints  in
+                    let hasalready = IntraNodeMap.add y itercount hasalready in
+                    let (work,rest) = 
+                      if IntraNodeMap.find y work < itercount then
+                        (IntraNodeMap.add y itercount work, y::rest)
+                      else (work,rest) in
+                    (rest,hasalready,work,joinpoints)
+                  else (rest,hasalready,work,joinpoints)
+                ) (IntraCfg.dom_fronts node cfg) (rest,hasalready,work,joinpoints) in
+            iterate_node rest var itercount hasalready work joinpoints
+        | [] -> (hasalready,work,joinpoints) in
+    let rec iterate_variable vars itercount hasalready work joinpoints = 
+      match vars with
+        | v::rest ->
+            let itercount = itercount + 1 in
+            let (w,work) = IntraNodeSet.fold (fun node (w,work) -> 
+                                        (node::w, IntraNodeMap.add node itercount work)
+                                     ) (LocMap.find v defnodes_of) ([],work) in
+            let (hasalready, work, joinpoints) = iterate_node w v itercount hasalready work joinpoints in 
+              iterate_variable rest itercount hasalready work joinpoints
+        | [] -> joinpoints in
+    let init_vars = (PowLoc.elements variables) in
+    let init_hasalready = list_fold (fun x -> IntraNodeMap.add x 0) (IntraCfg.nodesof cfg) IntraNodeMap.empty in
+    let init_work = list_fold (fun x -> IntraNodeMap.add x 0) (IntraCfg.nodesof cfg) IntraNodeMap.empty in
+    let init_itercount = 0 in
+      iterate_variable init_vars init_itercount init_hasalready init_work NodeMap.empty
+  
+  let cfg2dug : Global.t * AccessAnalysis.t * PowLoc.t -> IntraCfg.t -> DUGraph.t -> DUGraph.t
+  =fun (global,acc_info,locset) cfg dug ->
+    Profiler.start_event "DugGen.cfg2dug init";
+    let pid = IntraCfg.get_pid cfg in
+    Profiler.finish_event "DugGen.cfg2dug init";
+    Profiler.start_event "DugGen.cfg2dug prepare_du";
+    let (node2defs,node2uses) = prepare_defs_uses (global,acc_info,locset) cfg in
+    Profiler.finish_event "DugGen.cfg2dug prepare_du";
+    Profiler.start_event "DugGen.cfg2dug prepare_def";
+    let loc2defnodes = prepare_defnodes (global,acc_info) cfg node2defs in
+    Profiler.finish_event "DugGen.cfg2dug prepare_def";
+    Profiler.start_event "DugGen.cfg2dug get_phi";
+    let phi_points = get_phi_points cfg acc_info (node2defs,node2uses,loc2defnodes) in
+    Profiler.finish_event "DugGen.cfg2dug get_phi";
+    let defs_of node = IntraNodeMap.find node node2defs in
+    let uses_of node = IntraNodeMap.find node node2uses in
+    let phi_vars_of cfgnode = try NodeMap.find (Node.make pid cfgnode) phi_points with _ -> PowLoc.empty in
+    let draw_from_lastdef loc2lastdef loc here dug = 
+      try 
+        let src = Node.make pid (LocMap.find loc loc2lastdef) in
+        let dst = Node.make pid here in
+          if PowLoc.mem loc locset then DUGraph.add_absloc src loc dst dug
+          else dug
+      with _ -> dug in
+    let rec search loc2lastdef node dug = 
+      let uses = uses_of node in 
+      let non_phi_uses = PowLoc.diff uses (phi_vars_of node) in
+      (* 1: draw non-phi uses from their last definition points 
+       *    do not draw for phi-vars since their the last defpoints are the
+       *    current node *)
+      Profiler.start_event "DugGen.cfg2dug draw_from_lastdef";
+      let dug = 
+          PowLoc.fold (fun loc ->
+            draw_from_lastdef loc2lastdef loc node
+          ) non_phi_uses dug in
+      Profiler.finish_event "DugGen.cfg2dug draw_from_lastdef";
+  
+      (* 2: update the last definitions:
+       * (1) phi-variables are defined here
+       * (2) lhs are defined here *)
+      Profiler.start_event "DugGen.cfg2dug loc2lastdef";
+      let loc2lastdef = 
+        PowLoc.fold (fun loc ->
+          LocMap.add loc node
+        ) (PowLoc.union (defs_of node) (phi_vars_of node)) loc2lastdef in
+      Profiler.finish_event "DugGen.cfg2dug loc2lastdef";
+          
+      (* 3: draw phi-vars of successors from their last definitions *)
+      Profiler.start_event "DugGen.cfg2dug draw phi";
+      let dug = 
+        list_fold (fun succ ->
+          PowLoc.fold (fun phi_var ->
+            draw_from_lastdef loc2lastdef phi_var succ
+         ) (phi_vars_of succ) 
+        ) (IntraCfg.succ node cfg) dug in
+      Profiler.finish_event "DugGen.cfg2dug draw phi";
+  
+      (* 4: process children of dominator trees *)
+      IntraNodeSet.fold (search loc2lastdef) (IntraCfg.children_of_dom_tree node cfg) dug 
+    in search LocMap.empty IntraCfg.Node.entry dug
+  
+  let draw_intraedges : Global.t * AccessAnalysis.t * PowLoc.t -> DUGraph.t -> DUGraph.t 
+  =fun (global,acc_info,locset) dug ->
+    Profiler.start_event "DugGen.draw_intraedges";
+    let n_pids = List.length (InterCfg.pidsof global.icfg) in
+    my_prerr_endline "draw intra-procedural edges";
+    let r =snd (
+        InterCfg.fold_cfgs (fun pid cfg (k,dug) ->
+          prerr_progressbar k n_pids;
+          (k+1,cfg2dug (global,acc_info,locset) cfg dug)
+        ) global.icfg (1,dug)) in
+    Profiler.finish_event "DugGen.draw_intraedges";
+    r
+  
+  let draw_interedges : Global.t * AccessAnalysis.t * PowLoc.t -> DUGraph.t -> DUGraph.t
+  =fun (global,acc_info,locset) dug -> 
+    let calls = InterCfg.callnodesof global.icfg in
+    let n_calls = List.length calls in
+    my_prerr_endline "draw inter-procedural edges";
+    list_fold (fun call (k,dug) ->
+      prerr_progressbar k n_calls;
+      let return = InterCfg.returnof call global.icfg in
+        (k+1, ProcSet.fold (fun callee dug ->
+          let entry = InterCfg.entryof global.icfg callee in
+          let exit  = InterCfg.exitof  global.icfg callee in
+          let locs_on_call = access_of_function global acc_info callee locset in
+          let locs_on_return = defs_of_function global acc_info callee locset in
+            dug
+            |> DUGraph.add_abslocs call locs_on_call entry
+            |> DUGraph.add_abslocs exit locs_on_return return
+        ) (InterCfg.get_callees call global.icfg) dug)
+    ) calls (1,dug)
+    |> snd
+  
+  let draw_singledefs : Global.t * AccessAnalysis.t * PowLoc.t -> InterCfg.Node.t list -> DUGraph.t -> DUGraph.t
+  =fun (global,acc_info,locset) nodes dug -> 
+    let nodes = PowNode.of_list nodes in
+    let single_defs = PowLoc.inter locset (get_single_defs acc_info) in
+      PowLoc.fold (fun x dug ->
+        let def_points = get_def_points_of acc_info x in
+        let _ = assert (PowNode.cardinal def_points = 1) in
+        let def_point = PowNode.choose def_points in
+        let use_points = get_use_points_of acc_info x in
+          PowNode.fold (fun use_point ->
+            if PowNode.mem def_point nodes && PowNode.mem use_point nodes
+            then DUGraph.add_absloc def_point x use_point
+            else id
+          ) use_points dug
+      ) single_defs dug
+  
+  let make ?(skip_nodes = BatSet.empty) : Global.t * AccessAnalysis.t * PowLoc.t -> DUGraph.t
+  =fun (global,acc_info,locset) ->
+    let nodes = InterCfg.nodesof global.icfg in
+    let acc_info = AccessAnalysis.restrict_access acc_info locset in
+    DUGraph.create ~size:(List.length nodes) ()
+    |> draw_intraedges (global,acc_info,locset)
+    |> draw_interedges (global,acc_info,locset)
+
+  let to_json_intra : DUGraph.t -> AccessAnalysis.t -> json
+  = fun g acc_info ->
+    let nodes = `List (DUGraph.fold_node (fun v nodes -> 
+                  (`String (Node.to_string v))::nodes) g []) 
+    in
+    let edges = `List (DUGraph.fold_edges (fun src dst edges ->
+                  let spid = InterCfg.Node.get_pid src in
+                  let dpid = InterCfg.Node.get_pid dst in
+                  if spid = dpid then
+                    let addrset = DUGraph.get_abslocs src dst g in
+                    let access_proc = AccessAnalysis.get_access_proc acc_info spid in
+                    let localset = PowLoc.filter (fun x -> 
+                                    Access.mem x access_proc) addrset in
+                    if PowLoc.is_empty localset then edges
+                    else
+                      (`List [`String (Node.to_string src); `String (Node.to_string dst); 
+                              `String (PowLoc.fold (fun addr s -> (Loc.to_string addr)^","^s) localset "")])
+                      ::edges
+                  else edges
+                  ) g [])
+    in
+    `Assoc [("nodes", nodes); ("edges", edges)]
+  
+    let to_json_inter : DUGraph.t -> AccessAnalysis.t -> json
+    = fun g acc_info ->
+      let nodes = `List (DUGraph.fold_node (fun v nodes -> 
+                    (`String (Node.to_string v))::nodes) g []) 
+      in
+      let edges = `List (DUGraph.fold_edges (fun src dst edges ->
+                    let spid = InterCfg.Node.get_pid src in
+                    let dpid = InterCfg.Node.get_pid dst in
+                    if not (spid = dpid) then
+                      let addrset = DUGraph.get_abslocs src dst g in
+                      let access_proc = AccessAnalysis.get_access_proc acc_info spid in
+                      let localset = PowLoc.filter (fun x -> 
+                                      Access.mem x access_proc) addrset in
+                      if PowLoc.is_empty localset then edges
+                      else
+                        (`List [`String (Node.to_string src); `String (Node.to_string dst); 
+                                `String (PowLoc.fold (fun addr s -> (Loc.to_string addr)^","^s) localset "")])
+                        ::edges
+                    else edges
+                    ) g [])
+      in
+      `Assoc [("nodes", nodes); ("edges", edges)]
+end

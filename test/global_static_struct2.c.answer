@@ -1,0 +1,17 @@
+global_static_struct2.c 
+To inline : []
+Excluded variable-arguments functions : []
+Excluded recursive functions : []
+Excluded too large functions : []
+#Procs : 2
+#Nodes : 38
+#Nodes in def-use graph : 28
+#Locs on def-use graph : 57
+
+= Alarms =
+
+#queries                 : 9
+#queries mod alarm point : 4
+#proven                  : 4
+#unproven                : 0
+#bot-involved            : 0

@@ -1,0 +1,17 @@
+global_array.c 
+To inline : []
+Excluded variable-arguments functions : []
+Excluded recursive functions : []
+Excluded too large functions : []
+#Procs : 2
+#Nodes : 32
+#Nodes in def-use graph : 27
+#Locs on def-use graph : 47
+
+= Alarms =
+
+#queries                 : 7
+#queries mod alarm point : 2
+#proven                  : 2
+#unproven                : 0
+#bot-involved            : 0

@@ -1,0 +1,19 @@
+test.c 
+To inline : []
+Excluded variable-arguments functions : []
+Excluded recursive functions : []
+Excluded too large functions : []
+#Procs : 2
+#Nodes : 20
+#Nodes in def-use graph : 15
+#Locs on def-use graph : 32
+
+= Alarms =
+1. test.c:9 {main} UnProven
+  arr[i] @main-19:  offset: [0, 19], size: [10, 10] UnProven, allocsite: main-12
+
+#queries                 : 2
+#queries mod alarm point : 2
+#proven                  : 1
+#unproven                : 1
+#bot-involved            : 0

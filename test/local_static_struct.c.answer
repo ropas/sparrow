@@ -1,0 +1,21 @@
+local_static_struct.c 
+To inline : []
+Excluded variable-arguments functions : []
+Excluded recursive functions : []
+Excluded too large functions : []
+#Procs : 2
+#Nodes : 28
+#Nodes in def-use graph : 20
+#Locs on def-use graph : 54
+
+= Alarms =
+1. local_static_struct.c:10 {main} UnProven
+  str[0].arr[20] @main-19:  offset: [20, 20], size: [16, 16] UnProven, allocsite: main-15
+2. local_static_struct.c:15 {main} UnProven
+  str[0].arr[20] @main-23:  offset: [20, 20], size: [16, 16] UnProven, allocsite: main-15
+
+#queries                 : 8
+#queries mod alarm point : 6
+#proven                  : 4
+#unproven                : 2
+#bot-involved            : 0
