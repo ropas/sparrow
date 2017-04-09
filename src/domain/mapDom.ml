@@ -52,13 +52,9 @@ struct
   module BatMap = BatMap.Make(A)
   module PowA = PowDom.Make(A)
   
-  type t = B.t BatMap.t
+  type t = B.t BatMap.t [@@deriving compare]
   module A = A
   module B = B
-
-
-  let compare : t -> t -> int 
-  = BatMap.compare B.compare
 
   let to_string : t -> string = fun x ->
     let add_string_of_k_v k v acc =
@@ -239,7 +235,7 @@ struct
         if PowA.mem k2 candidate then loop kv1 (BatEnum.get e_new) ((k2,B.bot,v2)::unstb)
         else loop kv1 (BatEnum.get e_new) unstb
       | Some (k1, v1), Some (k2, v2) ->
-        let cmp = Pervasives.compare k1 k2 in
+        let cmp = A.compare k1 k2 in
         if cmp < 0 then 
           loop (BatEnum.get e_old) kv2 unstb
         else if cmp > 0 then
