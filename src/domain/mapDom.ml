@@ -37,7 +37,7 @@ sig
   val to_string : t -> string
   val for_all : (A.t -> B.t -> bool) -> t -> bool
   val exists : (A.t -> B.t -> bool) -> t -> bool
-  val keys : t -> A.t BatSet.t
+  val keys : t -> PowA.t
 
   val unstables : t -> t -> (B.t -> B.t -> bool) -> PowA.t
     -> (A.t * B.t * B.t) list
@@ -263,7 +263,7 @@ struct
 
   let widen_pairs : (A.t * B.t) list -> t -> t = add_pairs widen_add
 
-  let keys m = foldi (fun k _ -> BatSet.add k) m BatSet.empty
+  let keys m = foldi (fun k _ -> PowA.add k) m PowA.empty
 
   let mem = BatMap.mem
 

@@ -35,7 +35,7 @@ sig
   val to_string : t -> string
   val for_all : (A.t -> B.t -> bool) -> t -> bool
   val exists : (A.t -> B.t -> bool) -> t -> bool
-  val keys : t -> A.t BatSet.t
+  val keys : t -> PowA.t
 
   val unstables : t -> t -> (B.t -> B.t -> bool) -> PowA.t
     -> (A.t * B.t * B.t) list
