@@ -111,13 +111,13 @@ struct
     with _ -> 
       let locset = 
         if Global.is_rec pid global then
-          let defs = Access.defof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
-          let uses = Access.useof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
+          let defs = Access.defof (AccessAnalysis.get_access_reach acc_info pid) in
+          let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
           let access = PowLoc.union defs uses in
           PowLoc.inter locset access
         else 
-          let defs = Access.defof (AccessAnalysis.get_access_reach acc_info pid) in
-          let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
+          let defs = Access.defof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
+          let uses = Access.useof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
           let access = PowLoc.union defs uses in
           PowLoc.inter locset access
       in
