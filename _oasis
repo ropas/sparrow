@@ -12,8 +12,8 @@ BuildTools: ocamlbuild
 Plugins: META (0.4), DevFiles (0.4)
 
 PostBuildCommand: 
-  cp main.native bin/sparrow
-  cp vis.native bin/sparrow-vis
+  cp -f main.native bin/sparrow
+  cp -f vis.native bin/sparrow-vis
   rm -f main.native vis.native test.native
 
 PostInstallCommand:
