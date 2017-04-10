@@ -124,7 +124,6 @@ struct
       Hashtbl.add access_table pid locset;
       locset
 
-  (* TODO: filter local variables *)
   let get_local_locations : Global.t -> AccessAnalysis.t -> pid -> PowLoc.t
   =fun global acc_info pid -> AccessAnalysis.get_access_local acc_info pid
 
@@ -223,31 +222,31 @@ struct
       with _ -> NodeMap.add k (PowLoc.singleton v) map in
     let rec iterate_node w var itercount hasalready work joinpoints = 
       match w with
-        | node::rest ->
-            let (rest,hasalready,work,joinpoints) = 
-              IntraNodeSet.fold (fun y (rest,hasalready,work,joinpoints) ->
-                  if IntraNodeMap.find y hasalready < itercount then
-                    let joinpoints = map_set_add (Node.make pid y) var joinpoints  in
-                    let hasalready = IntraNodeMap.add y itercount hasalready in
-                    let (work,rest) = 
-                      if IntraNodeMap.find y work < itercount then
-                        (IntraNodeMap.add y itercount work, y::rest)
-                      else (work,rest) in
-                    (rest,hasalready,work,joinpoints)
-                  else (rest,hasalready,work,joinpoints)
-                ) (IntraCfg.dom_fronts node cfg) (rest,hasalready,work,joinpoints) in
-            iterate_node rest var itercount hasalready work joinpoints
-        | [] -> (hasalready,work,joinpoints) in
+      | node::rest ->
+          let (rest,hasalready,work,joinpoints) = 
+            IntraNodeSet.fold (fun y (rest,hasalready,work,joinpoints) ->
+                if IntraNodeMap.find y hasalready < itercount then
+                  let joinpoints = map_set_add (Node.make pid y) var joinpoints  in
+                  let hasalready = IntraNodeMap.add y itercount hasalready in
+                  let (work,rest) = 
+                    if IntraNodeMap.find y work < itercount then
+                      (IntraNodeMap.add y itercount work, y::rest)
+                    else (work,rest) in
+                  (rest,hasalready,work,joinpoints)
+                else (rest,hasalready,work,joinpoints)
+              ) (IntraCfg.dom_fronts node cfg) (rest,hasalready,work,joinpoints) in
+          iterate_node rest var itercount hasalready work joinpoints
+      | [] -> (hasalready,work,joinpoints) in
     let rec iterate_variable vars itercount hasalready work joinpoints = 
       match vars with
-        | v::rest ->
-            let itercount = itercount + 1 in
-            let (w,work) = IntraNodeSet.fold (fun node (w,work) -> 
-                                        (node::w, IntraNodeMap.add node itercount work)
-                                     ) (LocMap.find v defnodes_of) ([],work) in
-            let (hasalready, work, joinpoints) = iterate_node w v itercount hasalready work joinpoints in 
-              iterate_variable rest itercount hasalready work joinpoints
-        | [] -> joinpoints in
+      | v::rest ->
+          let itercount = itercount + 1 in
+          let (w,work) = IntraNodeSet.fold (fun node (w,work) -> 
+                                      (node::w, IntraNodeMap.add node itercount work)
+                                   ) (LocMap.find v defnodes_of) ([],work) in
+          let (hasalready, work, joinpoints) = iterate_node w v itercount hasalready work joinpoints in 
+            iterate_variable rest itercount hasalready work joinpoints
+      | [] -> joinpoints in
     let init_vars = (PowLoc.elements variables) in
     let init_hasalready = list_fold (fun x -> IntraNodeMap.add x 0) (IntraCfg.nodesof cfg) IntraNodeMap.empty in
     let init_work = list_fold (fun x -> IntraNodeMap.add x 0) (IntraCfg.nodesof cfg) IntraNodeMap.empty in

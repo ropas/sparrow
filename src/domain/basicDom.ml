@@ -133,6 +133,7 @@ struct
   let of_gvar x typ = GVar (x,typ)
   let of_lvar p x typ = LVar (p,x,typ) 
   let of_allocsite : Allocsite.t -> t = fun x -> Allocsite x 
+  let return_var pid typ = LVar (pid, "__return__", typ)
 
   let append_field x f typ = Field (x,f,typ)
 end

@@ -676,20 +676,35 @@ let run : update_mode -> Spec.t -> Node.t -> Mem.t * Global.t -> Mem.t * Global.
          match lvo with
          | None -> global.dump
          | Some lv ->
+           let retvars_of_proc f acc =
+             let ret = Loc.return_var f (Cil.typeOfLval lv) in
+             PowLoc.add ret acc in
+           let retvar_set = PowProc.fold retvars_of_proc fs PowLoc.empty in
+           let _ = Mem.lookup retvar_set mem in
            PowProc.fold (fun f d ->
               Dump.weak_add f (eval_lv ~spec pid lv mem) d
            ) fs global.dump in
       let mem = bind_arg_lvars_set mode spec global arg_lvars_set arg_vals mem in
-      (mem, {global with dump = dump})
+      (mem, { global with dump })
   | IntraCfg.Cmd.Creturn (ret_opt, _) ->
       (match ret_opt with
       | None -> mem
       | Some e ->
-        Dump.find pid global.dump
-        |> (fun ret_locs -> update Weak spec global ret_locs (eval ~spec pid e mem) mem))
+        update Weak spec global (Loc.return_var pid (Cil.typeOf e) |> PowLoc.singleton) (eval ~spec pid e mem) mem)
       |> (fun mem -> (mem, global))
-  | IntraCfg.Cmd.Casm _ -> (mem, global)    (* Not supported *)
+  | IntraCfg.Cmd.Cskip when InterCfg.is_returnnode node global.icfg -> 
+    let callnode = InterCfg.callof node global.icfg in
+    (match InterCfg.cmdof global.icfg callnode with
+       IntraCfg.Cmd.Ccall (Some lv, f, _, _) ->
+        let callees = Val.pow_proc_of_val (eval ~spec pid f mem) in (* TODO: optimize this. memory access and du edges *)
+        let retvar_set = PowProc.fold (fun f -> 
+          let ret = Loc.return_var f (Cil.typeOfLval lv) in
+          PowLoc.add ret) callees PowLoc.empty in
+        update Weak spec global (eval_lv ~spec pid lv mem) (lookup retvar_set mem) mem
+     | _ -> mem)
+    |> (fun mem -> (mem, global))
   | IntraCfg.Cmd.Cskip -> (mem, global)  
+  | IntraCfg.Cmd.Casm _ -> (mem, global)    (* Not supported *)
   | _ -> invalid_arg "itvSem.ml: run_cmd" 
 
 let initial _ = Mem.bot

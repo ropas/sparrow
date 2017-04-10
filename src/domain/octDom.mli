@@ -41,6 +41,7 @@ end with type t = PowDom.Make(Pack).t and type elt = Pack.t
 
 module Octagon : sig
  include AbsDom.LAT
+ val top : Pack.t -> t
  val is_bot : t -> bool
  val itv_of_var : OctLoc.t -> t -> Itv.t
  val itv_of_expr : Apron.Texpr1.expr -> t -> Itv.t

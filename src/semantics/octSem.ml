@@ -428,6 +428,8 @@ let rec run_cmd mode packconf node cmd ptrmem (mem,global) =
   | IntraCfg.Cmd.Creturn (Some e, _) -> 
       let ret_locs = Dump.find (InterCfg.Node.get_pid node) global.dump |> PowOctLoc.of_locs in
       set mode global ptrmem packconf pid ret_locs e mem
+  | IntraCfg.Cmd.Cskip when InterCfg.start_node = node -> 
+      PackConf.fold (fun pack -> Mem.add pack (Octagon.top pack)) packconf mem
   | _ -> mem
 
 let run : update_mode -> Spec.t -> Node.t -> Dom.t * Global.t -> Dom.t * Global.t

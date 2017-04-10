@@ -43,6 +43,7 @@ module Loc : sig
   val of_lvar : Proc.t -> string -> Cil.typ -> t
   val append_field : t -> field -> Cil.typ -> t 
   val of_allocsite : Allocsite.t -> t
+  val return_var : Proc.t -> Cil.typ -> t
   val is_local_of : Proc.t -> t -> bool
   val get_proc : t -> Proc.t
   val typ : t -> Cil.typ option

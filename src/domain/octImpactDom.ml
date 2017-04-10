@@ -74,7 +74,7 @@ struct
 
   (* x := y + c *)
   let set_variable x y = function Bot -> bot | V (g,c,d) ->
-    if x = y then V (g,c,d) 
+    if OctLoc.compare x y = 0 then V (g,c,d) 
     else if PowOctLoc.mem y d then 
       let g = G.add_edge g x y in
       let g = G.add_edge g y x in
@@ -82,7 +82,7 @@ struct
     else V (g,c,d)
 
   let weak_set_variable x y = function Bot -> bot | V (g,c,d) ->
-    if x = y then V (g,c,d) 
+    if OctLoc.compare x y = 0 then V (g,c,d) 
     else if PowOctLoc.mem y d then 
       V (g, c, PowOctLoc.add x d) (* |> closure *)
     else V (g,c,d)
@@ -92,7 +92,7 @@ struct
 
   (* x - y <= c *)
   let assume x y = function Bot -> bot | V (g,c,d) ->
-    if x = y then V (g,c,d) 
+    if OctLoc.compare x y = 0 then V (g,c,d) 
     else if PowOctLoc.mem x d && PowOctLoc.mem y d then 
       let g = G.add_edge g y x in
       V (g, c, d) (* |> closure *)

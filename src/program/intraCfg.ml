@@ -232,6 +232,7 @@ let add_new_node : node -> cmd -> node -> t -> t
      >>> add_edge n new_node
      >>> add_edge new_node s) g
 
+(* TODO: optimize G.pred *)
 let pred : node -> t -> node list
 =fun n g -> G.pred g.graph n
 

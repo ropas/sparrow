@@ -126,7 +126,8 @@ let is_callnode : node -> t -> bool
 =fun (pid,node) g -> IntraCfg.is_callnode node (cfgof g pid)
 
 let is_returnnode : node -> t -> bool
-=fun (pid,node) g -> IntraCfg.is_returnnode node (cfgof g pid)
+=fun (pid,node) g -> 
+  try IntraCfg.is_returnnode node (cfgof g pid) with _ -> false
 
 let returnof : node -> t -> node 
 =fun (pid,node) g -> (pid, IntraCfg.returnof node (cfgof g pid))
