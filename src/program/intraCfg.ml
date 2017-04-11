@@ -519,8 +519,8 @@ let transform_string_allocs : Cil.fundec -> t -> t
         let tempinfo = Cil.makeTempVar fd (Cil.TPtr (Cil.TInt (IChar, []), [])) in
         let temp = (Cil.Var tempinfo, Cil.NoOffset) in 
           (Lval temp, [(temp, s)])
-    | Lval (Mem e, off) -> 
-        let (exp', l) = replace_str e in
+    | Lval (Mem exp, off) -> 
+        let (exp', l) = replace_str exp in
         (match l with [] -> (e, l) | _ -> (Lval (Mem exp', off), l))
     | SizeOfStr s -> 
         let tempinfo = Cil.makeTempVar fd (Cil.TPtr (Cil.TInt (IChar, []), [])) in
@@ -552,8 +552,8 @@ let transform_string_allocs : Cil.fundec -> t -> t
                     let cmd = Cmd.Csalloc (lv, s, loc) in
                     let g = add_cmd new_node cmd g in
                     (new_node, g)) (node, g) l
-  in
-  fold_node (fun n g -> 
+    in
+    fold_node (fun n g -> 
       match find_cmd n g with 
         Cmd.Cset (lv, e, loc) ->
           (match replace_str e with
