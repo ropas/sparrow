@@ -553,6 +553,9 @@ let transform_string_allocs : Cil.fundec -> t -> t
                     let g = add_cmd new_node cmd g in
                     (new_node, g)) (node, g) l
     in
+    (* make it consistent with manual encoding in *Sem.ml *)
+    let targets = ["strcpy"; "strcat"; "strncpy"; "memcpy"; "memmove"; "strlen"; "fgets"; 
+                   "sprintf"; "scanf"; "getenv"; "strdup"; "gettext"; "getpwent"; "strchr"; "strrchr" ] in
     fold_node (fun n g -> 
       match find_cmd n g with 
         Cmd.Cset (lv, e, loc) ->
@@ -577,6 +580,9 @@ let transform_string_allocs : Cil.fundec -> t -> t
             let g = add_cmd last_node cmd g in
             let g = add_edge node last_node g in
               replace_node_graph n empty_node last_node g)
+        (* do not allocate memory cells for arguments of external lib calls *)
+      | Cmd.Ccall (lv, Cil.Lval (Cil.Var f, Cil.NoOffset), el, loc) 
+        when f.vstorage = Cil.Extern && not (List.mem f.vname targets) -> g
       | Cmd.Ccall (lv, f, el, loc) -> 
           let (el, l) = List.fold_left (fun (el, l) param -> 
               let (e', l') = replace_str param in
