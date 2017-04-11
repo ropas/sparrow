@@ -14,9 +14,9 @@ open Vocab
 open InterCfg
 
 module Node = InterCfg.Node
-module PowNode = PowDom.Make(Node)
+module PowNode = PowDom.MakeCPO(Node)
 module Proc = InterCfg.Proc
-module PowProc = PowDom.Make (Proc)
+module PowProc = PowDom.MakeCPO(Proc)
 
 module ExtAllocsite =
 struct
@@ -140,7 +140,7 @@ end
 
 module PowLoc = 
 struct 
-  include PowDom.Make (Loc)
+  include PowDom.MakeCPO (Loc)
 
   let prune op x e = 
     match op with 
@@ -157,4 +157,4 @@ struct
     fold add_appended ls bot
 end
 
-module Dump = MapDom.Make (Proc) (PowLoc)
+module Dump = MapDom.MakeCPO (Proc) (PowLoc)

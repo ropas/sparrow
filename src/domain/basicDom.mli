@@ -12,9 +12,9 @@
 open AbsDom
 
 module Node = InterCfg.Node
-module PowNode : PowDom.S with type t = PowDom.Make(Node).t and type elt = Node.t
+module PowNode : PowDom.CPO with type t = PowDom.MakeCPO(Node).t and type elt = Node.t
 module Proc = InterCfg.Proc
-module PowProc : PowDom.S with type t = BatSet.Make(Proc).t and type elt = Proc.t
+module PowProc : PowDom.CPO with type t = PowDom.MakeCPO(Proc).t and type elt = Proc.t
 
 module Allocsite : sig
   include AbsDom.SET
@@ -50,10 +50,10 @@ module Loc : sig
 end
 
 module PowLoc : sig
-  include PowDom.S
+  include PowDom.CPO
   val null : t
   val prune : Cil.binop -> t -> Cil.exp -> t 
   val append_field : t -> Cil.fieldinfo -> t
-end with type t = PowDom.Make(Loc).t and type elt = Loc.t 
+end with type t = PowDom.MakeCPO(Loc).t and type elt = Loc.t 
 
-module Dump : MapDom.S with type A.t = Proc.t and type B.t = PowLoc.t
+module Dump : MapDom.CPO with type A.t = Proc.t and type B.t = PowLoc.t

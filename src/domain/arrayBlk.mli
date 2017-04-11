@@ -22,7 +22,7 @@ sig
   val input : t
 end
 
-include MapDom.S with type A.t = BasicDom.Allocsite.t and type B.t = ArrInfo.t
+include MapDom.LAT with type A.t = BasicDom.Allocsite.t and type B.t = ArrInfo.t
 
 val make : BasicDom.Allocsite.t -> Itv.t -> Itv.t -> Itv.t -> Itv.t -> t
 

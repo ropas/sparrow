@@ -44,10 +44,9 @@ struct
     (itv_of_val x, pow_loc_of_val x, a, struct_of_val x, pow_proc_of_val x)
 
   let external_value : Allocsite.t -> t = fun allocsite ->
-    let array = ArrayBlk.extern allocsite in
-    (Itv.top, PowLoc.bot, array, StructBlk.bot, PowProc.bot)
+    (Itv.top, PowLoc.bot, ArrayBlk.extern allocsite, StructBlk.extern (), PowProc.bot)
   
-  let input_value : t = (Itv.top, PowLoc.bot, ArrayBlk.bot, StructBlk.bot, PowProc.bot)
+  let itv_top : t = (Itv.top, PowLoc.bot, ArrayBlk.bot, StructBlk.bot, PowProc.bot)
 
   let cast : Cil.typ -> Cil.typ -> t -> t
   = fun from_typ to_typ v -> 
@@ -69,7 +68,7 @@ end
 
 module Mem = 
 struct 
-  include InstrumentedMem.Make(MapDom.Make (Loc) (Val))
+  include InstrumentedMem.Make(MapDom.MakeCPO (Loc) (Val))
 
   let add k v m = 
     match Loc.typ k with
@@ -96,4 +95,4 @@ struct
     PowLoc.fold (fun x -> weak_add x v) locs mem 
 end
 
-module Table = MapDom.Make (Node) (Mem)
+module Table = MapDom.MakeCPO (Node) (Mem)

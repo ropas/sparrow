@@ -20,7 +20,7 @@ module OctLoc : sig
 end
 
 module PowOctLoc : sig
-  include PowDom.S
+  include PowDom.CPO
   val empty: t
   val of_locs : BasicDom.PowLoc.t -> t
   val of_sizes : BasicDom.Allocsite.t BatSet.t -> t
@@ -29,7 +29,7 @@ end with type elt = OctLoc.t
 module Pack = PowOctLoc
 
 module PackConf : sig
-  include PowDom.S
+  include PowDom.CPO
   val empty : t
   val make : ItvAnalysis.Table.t -> t -> t
   val get_pack : t -> OctLoc.t -> Pack.t
@@ -37,10 +37,10 @@ module PackConf : sig
   val add : Pack.t -> t -> t
   val fold : (Pack.t -> 'a -> 'a) -> t -> 'a -> 'a
   val print_info : t -> unit
-end with type t = PowDom.Make(Pack).t and type elt = Pack.t
+end with type t = PowDom.MakeCPO(Pack).t and type elt = Pack.t
 
 module Octagon : sig
- include AbsDom.LAT
+ include AbsDom.CPO
  val top : Pack.t -> t
  val is_bot : t -> bool
  val itv_of_var : OctLoc.t -> t -> Itv.t

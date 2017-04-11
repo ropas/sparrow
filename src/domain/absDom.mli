@@ -25,8 +25,8 @@ sig
   val hash      : t -> int
 end
 
-(** Signature of lattice *)
-module type LAT =
+(** Signature of CPO *)
+module type CPO = 
 sig
   include SET
 
@@ -42,4 +42,9 @@ sig
   val narrow : t -> t -> t
 end
 
-module type S = LAT
+(** Signature of lattice *)
+module type LAT =
+sig
+  include CPO
+  val top : t
+end

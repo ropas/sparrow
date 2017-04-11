@@ -32,11 +32,12 @@ val opt_pack_manual : bool ref
 
 (** {2 Unsoundness } *)
 
-val opt_bugfinder :  int ref
 val opt_unsound_loop : string BatSet.t ref
 val opt_unsound_lib : string BatSet.t ref
 val opt_extract_loop_feat : bool ref
 val opt_extract_lib_feat : bool ref
+val opt_top_location : bool ref
+val opt_bugfinder :  int ref
 
 (** {2 Main Analysis } *)
 

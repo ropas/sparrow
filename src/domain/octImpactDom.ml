@@ -167,7 +167,7 @@ end
 
 module Mem =
 struct
-  include InstrumentedMem.Make (MapDom.Make (Pack) (AbsOct))
+  include InstrumentedMem.Make (MapDom.MakeCPO (Pack) (AbsOct))
   let init packconf = 
     PackConf.fold (fun pack -> add pack AbsOct.top) packconf bot
 

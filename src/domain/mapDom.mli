@@ -10,12 +10,12 @@
 (***********************************************************************)
 (** Map domain *)
 
-module type S =
+module type CPO =
 sig
-  include AbsDom.LAT
+  include AbsDom.CPO
   module A : AbsDom.SET
-  module B : AbsDom.LAT
-  module PowA : PowDom.S with type elt = A.t
+  module B : AbsDom.CPO
+  module PowA : PowDom.CPO with type elt = A.t
 
   val empty : t
   val is_empty : t -> bool
@@ -45,7 +45,18 @@ sig
   val meet_big_small : t -> t -> t
 end
 
-module Make (A:AbsDom.SET)(B:AbsDom.LAT) : S 
+module type LAT =
+sig
+  include AbsDom.LAT
+  include CPO with type t := t
+end
+
+module MakeCPO (A:AbsDom.SET)(B:AbsDom.CPO) : CPO
   with type t = B.t BatMap.Make(A).t
-  and type PowA.t = PowDom.Make(A).t
+  and type PowA.t = PowDom.MakeCPO(A).t
   and type A.t = A.t and type B.t = B.t 
+
+module MakeLAT (A:AbsDom.SET)(B:AbsDom.CPO) : sig 
+  type t = V of B.t BatMap.Make(A).t | Top
+  include LAT with type t := t
+end with type PowA.t = PowDom.MakeCPO(A).t and type A.t = A.t and type B.t = B.t 

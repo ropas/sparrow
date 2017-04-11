@@ -309,7 +309,7 @@ let model_alloc_one mode spec pid lvo f (mem, global) =
     let arr_val = ItvDom.Val.of_array (ArrayBlk.make allocsite Itv.zero Itv.one Itv.one Itv.nat) in
     let ext_loc = PowLoc.singleton (Loc.of_allocsite allocsite) in
     let mem = update mode spec global (eval_lv ~spec pid lv mem) arr_val mem in
-    let mem = update mode spec global ext_loc Val.input_value mem in
+    let mem = update mode spec global ext_loc Val.itv_top mem in
     (mem,global)
 
 let model_realloc mode spec node (lvo, exps) (mem, global) =
@@ -343,7 +343,7 @@ let model_scanf mode spec pid exps (mem, global) =
       List.fold_left (fun (mem, global) e -> 
           match e with 
             Cil.AddrOf lv -> 
-              let mem = update mode spec global (eval_lv ~spec pid lv mem) Val.input_value mem in
+              let mem = update mode spec global (eval_lv ~spec pid lv mem) Val.itv_top mem in
               (mem, global)
           | _ -> (mem,global)) (mem,global) t
   | _ -> (mem, global)
@@ -373,7 +373,7 @@ let model_input mode spec pid lvo (mem, global) =
       let ext_v = Val.external_value allocsite in
       let ext_loc = PowLoc.singleton (Loc.of_allocsite allocsite) in
       let mem = update mode spec global (eval_lv ~spec pid lv mem) ext_v mem in
-      let mem = update mode spec global ext_loc Val.input_value mem in
+      let mem = update mode spec global ext_loc Val.itv_top mem in
         (mem,global)
   | _ -> (mem,global)
 
@@ -403,7 +403,7 @@ let rec model_fgets mode spec pid (lvo, exps) (mem, global) =
     let buf_val = ArrayBlk.set_null_pos buf_arr (Itv.join Itv.zero size_itv) |> ItvDom.Val.of_array in
     mem 
     |> update mode spec global buf_lv buf_val
-    |> update mode spec global allocsites Val.input_value
+    |> update mode spec global allocsites Val.itv_top
     |> (fun mem -> (mem, global))
   | (_, CastE (_, buf)::size::e) -> model_fgets mode spec pid (lvo, buf::size::e) (mem, global)
   | _ -> (mem,global)
@@ -436,9 +436,9 @@ let sparrow_arg mode spec pid exps (mem,global) =
   match exps with
     (Cil.Lval argc)::(Cil.Lval argv)::_ ->
       let argv_a = Allocsite.allocsite_of_ext (Some "argv") in 
-      let argv_v = Val.of_array (ArrayBlk.make argv_a Itv.zero Itv.pos Itv.one Itv.nat) in
+      let argv_v = Val.of_array (ArrayBlk.input argv_a) in
       let arg_a = Allocsite.allocsite_of_ext (Some "arg") in 
-      let arg_v = Val.of_array (ArrayBlk.make arg_a Itv.zero Itv.pos Itv.one Itv.nat) in
+      let arg_v = Val.of_array (ArrayBlk.input arg_a) in
       (update mode spec global (eval_lv ~spec pid argc mem) (Val.of_itv Itv.pos) mem
       |> update mode spec global (eval_lv ~spec pid argv mem) argv_v 
       |> update mode spec global (PowLoc.singleton (Loc.of_allocsite argv_a)) arg_v
@@ -450,7 +450,7 @@ let sparrow_opt mode spec pid exps (mem,global) =
   match exps with
     (Cil.Lval optind)::(Cil.Lval optarg)::_ ->
       let arg_a = Allocsite.allocsite_of_ext (Some "arg") in 
-      let arg_v = Val.of_array (ArrayBlk.make arg_a Itv.zero Itv.pos Itv.one Itv.nat) in
+      let arg_v = Val.of_array (ArrayBlk.input arg_a) in
       (update mode spec global (eval_lv ~spec pid optind mem) (Val.of_itv Itv.nat) mem
       |> update mode spec global (eval_lv ~spec pid optarg mem) arg_v 
       |> update mode spec global (PowLoc.singleton (Loc.of_allocsite arg_a)) (Val.of_itv Itv.top), global)
@@ -471,7 +471,7 @@ let model_unknown mode spec node pid lvo f exps (mem, global) =
       let ext_v = ArrayBlk.extern allocsite |> ArrayBlk.cast_array (Cil.typeOfLval lv) |> Val.of_array in
       let ext_loc = PowLoc.singleton (Loc.of_allocsite allocsite) in
       let mem = update mode spec global (eval_lv ~spec pid lv mem) ext_v mem in
-      let mem = update mode spec global ext_loc Val.input_value mem in
+      let mem = update mode spec global ext_loc Val.itv_top mem in
       (mem,global)
 
 let model_memcpy mode spec pid (lvo, exps) (mem, global) = 
@@ -498,7 +498,7 @@ let model_getpwent mode spec node pid lvo f (mem,global) =
       let ext_loc = PowLoc.singleton (Loc.of_allocsite allocsite) in
       let mem = update mode spec global struct_loc struct_v mem 
               |> update mode spec global field_loc ext_v 
-              |> update mode spec global ext_loc Val.input_value in
+              |> update mode spec global ext_loc Val.itv_top in
       (mem, global)
   | _ -> (mem, global) 
 

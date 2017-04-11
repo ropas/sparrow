@@ -14,9 +14,9 @@ open BasicDom
 open Vocab
 
 module Struct = struct include String let to_string = id end
-module PowStruct = PowDom.Make (Struct)
+module PowStruct = PowDom.MakeCPO (Struct)
 
-include MapDom.Make (Loc) (PowStruct)
+include MapDom.MakeLAT (Loc) (PowStruct)
 
 let make : PowLoc.t -> Cil.compinfo -> t
 = fun ploc s ->
@@ -32,6 +32,10 @@ let append_field : t -> Cil.fieldinfo -> PowLoc.t
 
 let pow_loc_of_struct : t -> PowLoc.t = fun str ->
   foldi (fun k _ -> PowLoc.add k) str PowLoc.bot
+
+let extern () = 
+  if !Options.opt_top_location then top
+  else bot
 
 let to_string : t -> string = fun x ->
   if is_empty x then "bot" else

@@ -47,6 +47,7 @@ let opt_unsound_loop = ref BatSet.empty
 let opt_unsound_lib = ref BatSet.empty
 let opt_extract_loop_feat = ref false
 let opt_extract_lib_feat = ref false
+let opt_top_location = ref false
 let opt_bugfinder = ref 0
 
 (* Alarm Report *)
@@ -97,6 +98,7 @@ let opts =
   ("-unsound_lib", (Arg.String (fun s -> opt_unsound_lib := BatSet.add s !opt_unsound_lib)), "Unsound libs");
   ("-extract_loop_feat", (Arg.Set opt_extract_loop_feat), "Extract features of loops for harmless unsoundness");
   ("-extract_lib_feat", (Arg.Set opt_extract_lib_feat), "Extract features of libs for harmless unsoundness");
+  ("-top_location", (Arg.Set opt_top_location), "Treat unknown locations as top locations");
   ("-scaffold", (Arg.Set opt_scaffold), "Use scaffolding semantics");
   ("-nobar", (Arg.Set opt_nobar), "No progress bar");
   ("-show_all_query", (Arg.Set opt_show_all_query), "Show all queries");

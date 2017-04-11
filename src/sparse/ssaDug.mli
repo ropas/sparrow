@@ -12,7 +12,7 @@ module type S =
 sig
   module AccessAnalysis : AccessAnalysis.S
   module DUGraph : Dug.S
-  module PowLoc : PowDom.S
+  module PowLoc : PowDom.CPO
   type node = BasicDom.Node.t
   type loc
   val make              : ?skip_nodes : BasicDom.Node.t BatSet.t -> Global.t * AccessAnalysis.t * PowLoc.t -> DUGraph.t

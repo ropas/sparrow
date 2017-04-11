@@ -16,7 +16,7 @@ module type S =
 sig
   type t
   module Loc : SET
-  module PowLoc : PowDom.S with type elt = Loc.t
+  module PowLoc : PowDom.CPO with type elt = Loc.t
   type mode
   val empty : t
   val def : mode
@@ -46,7 +46,7 @@ sig
   val print_def : t -> unit
 end
 
-module Make(Dom: MapDom.S) = 
+module Make(Dom: MapDom.CPO) = 
 struct
   module PowLoc = Dom.PowA
   module Loc = Dom.A

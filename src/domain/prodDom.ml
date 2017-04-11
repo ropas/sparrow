@@ -12,7 +12,7 @@
 open AbsDom
 open Vocab
 
-module Make (A:LAT) (B:LAT) =
+module Make (A:CPO) (B:CPO) =
 struct
   type t = A.t * B.t [@@deriving compare]
   
@@ -49,7 +49,7 @@ struct
     "("^(A.to_string (fst x))^", "^(B.to_string (snd x))^")"
 end
 
-module Make5 (A:LAT) (B:LAT) (C:LAT) (D:LAT) (E:LAT) =
+module Make5 (A:CPO) (B:CPO) (C:CPO) (D:CPO) (E:CPO) =
 struct
   type t = A.t * B.t * C.t * D.t * E.t [@@deriving compare]
 

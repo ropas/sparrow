@@ -12,7 +12,7 @@
 module type S = 
 sig                          
   module Dom : InstrumentedMem.S
-  module Table : MapDom.S with type t = MapDom.Make(BasicDom.Node)(Dom).t and type A.t = BasicDom.Node.t and type B.t = Dom.t
+  module Table : MapDom.CPO with type t = MapDom.MakeCPO(BasicDom.Node)(Dom).t and type A.t = BasicDom.Node.t and type B.t = Dom.t
   module Spec : Spec.S with type Dom.t = Dom.t and type Dom.A.t = Dom.A.t
   val perform : Spec.t -> Global.t -> Global.t * Table.t * Table.t
 end

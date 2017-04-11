@@ -11,15 +11,15 @@
 (** Product domain  *)
 open AbsDom
 
-module Make (A:LAT) (B:LAT) : sig
-  include AbsDom.LAT
+module Make (A:CPO) (B:CPO) : sig
+  include AbsDom.CPO
   val make  : A.t -> B.t -> t
   val fst   : t -> A.t
   val snd   : t -> B.t
 end with type t = A.t * B.t
 
-module Make5 (A:LAT) (B:LAT) (C:LAT) (D:LAT) (E:LAT) : sig
-  include AbsDom.LAT
+module Make5 (A:CPO) (B:CPO) (C:CPO) (D:CPO) (E:CPO) : sig
+  include AbsDom.CPO
   val make  : (A.t * B.t * C.t * D.t * E.t) -> t
   val fst   : t -> A.t
   val snd   : t -> B.t

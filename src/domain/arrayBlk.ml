@@ -24,7 +24,7 @@ struct
     stride    : Itv.t;
     null_pos  : Itv.t;
     structure : PowStruct.t;
-  }
+  } [@@deriving compare]
 
   let bot = { offset = Itv.bot; size = Itv.bot; stride = Itv.bot; null_pos = Itv.bot; structure = PowStruct.bot }
   let top = { offset = Itv.top; size = Itv.top; stride = Itv.top; null_pos = Itv.top; structure = PowStruct.bot }
@@ -33,8 +33,6 @@ struct
   let make (o,s,stride,null,structure) = 
     { offset = o; size = s; stride = stride; null_pos = null; structure = structure }
   
-  let compare = Pervasives.compare 
-
   let join a1 a2 = 
     if a1 == a2 then a2 else
     { offset    = Itv.join a1.offset a2.offset;
@@ -116,7 +114,7 @@ struct
 
 end
 
-include MapDom.Make (Allocsite) (ArrInfo)
+include MapDom.MakeLAT (Allocsite) (ArrInfo)
 
 let make : Allocsite.t -> Itv.t -> Itv.t -> Itv.t -> Itv.t -> t
 = fun a o sz st np ->
@@ -135,10 +133,12 @@ let nullof : t -> Itv.t
   fold (fun _ arr -> Itv.join arr.ArrInfo.null_pos) a Itv.bot
 
 let extern allocsite = 
-  add allocsite ArrInfo.top empty 
+  if !Options.opt_top_location then top
+  else add allocsite ArrInfo.top empty 
 
 let input allocsite = 
-  add allocsite ArrInfo.input empty 
+  if !Options.opt_top_location then top
+  else add allocsite ArrInfo.input empty 
 
 let weak_plus_size : t -> Itv.t -> t
 = fun arr i -> 

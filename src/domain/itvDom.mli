@@ -10,7 +10,7 @@
 (***********************************************************************)
 (** Abstract domains of interval analysis *)
 module Val : sig 
-  include AbsDom.LAT
+  include AbsDom.CPO
 
   val null : t
   val make : (Itv.t * BasicDom.PowLoc.t * ArrayBlk.t * StructBlk.t * BasicDom.PowProc.t) -> t
@@ -28,7 +28,7 @@ module Val : sig
   val modify_itv : Itv.t -> t -> t
   val modify_arr : ArrayBlk.t -> t -> t
   val external_value : BasicDom.Allocsite.t -> t
-  val input_value : t
+  val itv_top : t
   val cast : Cil.typ -> Cil.typ -> t -> t
 end
 
@@ -39,7 +39,7 @@ module Mem : sig
   val weak_update : BasicDom.PowLoc.t -> Val.t -> t -> t
 end with type A.t = BasicDom.Loc.t and type B.t = Val.t and type PowA.t = BasicDom.PowLoc.t
 
-module Table : MapDom.S with 
-  type t = MapDom.Make(BasicDom.Node)(Mem).t 
+module Table : MapDom.CPO with 
+  type t = MapDom.MakeCPO(BasicDom.Node)(Mem).t 
   and type A.t = BasicDom.Node.t 
   and type B.t = Mem.t

@@ -10,11 +10,10 @@
 (***********************************************************************)
 (** Powset domain *)
 
-module type S = 
+module type CPO = 
 sig 
-  include AbsDom.LAT
+  include AbsDom.CPO
   type elt
-  exception Error
 
   val empty : t
   val filter : (elt -> bool) -> t -> t
@@ -47,4 +46,14 @@ sig
   val elements : t -> elt list
 end
 
-module Make (A:AbsDom.SET) : S with type elt = A.t and type t = BatSet.Make(A).t
+module type LAT =
+sig
+  include AbsDom.LAT
+  include CPO with type t := t
+end
+
+module MakeCPO (A:AbsDom.SET) : CPO with type elt = A.t and type t = BatSet.Make(A).t
+module MakeWithTop (A:AbsDom.SET) : sig
+  type t = V of BatSet.Make(A).t | Top 
+  include LAT with type t := t
+end with type elt = A.t

@@ -20,7 +20,7 @@ sig
   type t
   type node = BasicDom.Node.t
   module Loc : AbsDom.SET
-  module PowLoc : PowDom.S with type elt = Loc.t
+  module PowLoc : PowDom.CPO with type elt = Loc.t
 
 
   val create            : ?size : int -> unit -> t 
@@ -51,7 +51,7 @@ sig
   val to_json           : t -> Yojson.Safe.json
 end
 
-module Make (Dom: MapDom.S) =
+module Make (Dom: MapDom.CPO) =
 struct
   type node = BasicDom.Node.t
   module PowLoc = Dom.PowA

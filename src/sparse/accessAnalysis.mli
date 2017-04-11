@@ -14,7 +14,7 @@ module type S =
 sig
   module Dom : InstrumentedMem.S
   module Loc : AbsDom.SET
-  module PowLoc : PowDom.S
+  module PowLoc : PowDom.CPO
   module LocMap : BatMap.S with type key = Loc.t
   module Access : Access.S with type Loc.t = Loc.t and type PowLoc.t = PowLoc.t
   type t

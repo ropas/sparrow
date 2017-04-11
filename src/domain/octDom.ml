@@ -27,7 +27,7 @@ struct
 end
 module PowOctLoc = 
 struct 
-  include PowDom.Make(OctLoc)
+  include PowDom.MakeCPO(OctLoc)
   let empty = bot
   let of_locs : PowLoc.t -> t
   = fun locs -> PowLoc.fold (fun x -> add (OctLoc.of_loc x)) locs empty
@@ -42,7 +42,7 @@ module Pack = PowOctLoc
 
 module PackConf = 
 struct
-  include PowDom.Make(Pack)
+  include PowDom.MakeCPO(Pack)
   
   (* cache *)
   let loc2pack : (OctLoc.t, Pack.t) Hashtbl.t = Hashtbl.create 1000
@@ -269,7 +269,7 @@ end
 
 module Mem = 
 struct 
-  include InstrumentedMem.Make (MapDom.Make (Pack) (Octagon))
+  include InstrumentedMem.Make (MapDom.MakeCPO (Pack) (Octagon))
 
   let top packconf = 
     PackConf.fold (fun pack -> add pack (Octagon.top pack)) packconf bot
