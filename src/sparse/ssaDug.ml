@@ -78,13 +78,19 @@ struct
   let access_table = Hashtbl.create 10000
   let access_wo_local_table = Hashtbl.create 10000
 
-  let uses_of_function : AccessAnalysis.t -> pid -> PowLoc.t -> PowLoc.t
-  =fun acc_info pid locset -> 
+  let uses_of_function : Global.t -> AccessAnalysis.t -> pid -> PowLoc.t -> PowLoc.t
+  =fun global acc_info pid locset -> 
     try
       Hashtbl.find use_table pid 
     with _ -> 
-      let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
-      let locset = PowLoc.inter locset uses in
+      let locset = 
+        if Global.is_rec pid global then
+          let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
+          PowLoc.inter locset uses
+        else
+          let uses = Access.useof (AccessAnalysis.get_access_reach_wo_local acc_info pid) in
+          PowLoc.inter locset uses
+      in
       Hashtbl.add use_table pid locset;
       locset
 
@@ -132,10 +138,10 @@ struct
   =fun (global,acc_info) node locset -> 
     let (pid,cfgnode) = Node.get_pid node, Node.get_cfgnode node in
     let ordinary_defs = get_ordinary_defs acc_info node in
-    (* entry defines access(f) *)
+    (* entry defines use(f) *)
     let defs_at_entry = 
       if IntraCfg.is_entry cfgnode 
-      then access_of_function global acc_info pid locset
+      then uses_of_function global acc_info pid locset
       else PowLoc.empty in
     (* return nodes define defs(callees) *)
     let defs_at_return =  
@@ -162,13 +168,8 @@ struct
       if InterCfg.is_returnnode node global.icfg && Global.is_rec pid global then
         get_local_locations global acc_info pid
       else PowLoc.empty in
-    (* return node uses defined variables(e.g. arguments) of call node *)
-    let uses_at_return1 =
-      if InterCfg.is_returnnode node global.icfg then
-        lhsof (global, acc_info) (InterCfg.callof node global.icfg) locset
-      else PowLoc.empty in
     (* return node uses not-localized variables of call node *)
-    let uses_at_return2 =
+    let uses_at_return =
       if InterCfg.is_returnnode node global.icfg then
         let call_node = InterCfg.callof node global.icfg in
         let callees = InterCfg.get_callees call_node global.icfg in
@@ -181,18 +182,17 @@ struct
           PowLoc.union (PowLoc.diff defs_of_callees defs) in
         ProcSet.fold add_not_defined callees PowLoc.empty
       else PowLoc.empty in
-    (* call nodes uses access(callees) *)
+    (* call nodes uses uses(callees) *)
     let uses_at_call = 
       if InterCfg.is_callnode node global.icfg then
         ProcSet.fold (fun callee ->
-          PowLoc.union (access_of_function global acc_info callee locset)
+          PowLoc.union (uses_of_function global acc_info callee locset)
         ) (InterCfg.get_callees node global.icfg) PowLoc.empty
       else PowLoc.empty 
     in
     list_fold PowLoc.union 
       [ ordinary_uses; uses_at_exit; uses_at_call; uses_at_rec_return;
-        uses_at_return1; uses_at_return2 ]
-      PowLoc.empty
+        uses_at_return ] PowLoc.empty
  
   let prepare_defs_uses : Global.t * AccessAnalysis.t * PowLoc.t -> IntraCfg.t -> access_map * access_map
   =fun (global,acc_info,locset) cfg -> 
@@ -338,7 +338,7 @@ struct
         (k+1, ProcSet.fold (fun callee dug ->
           let entry = InterCfg.entryof global.icfg callee in
           let exit  = InterCfg.exitof  global.icfg callee in
-          let locs_on_call = access_of_function global acc_info callee locset in
+          let locs_on_call = uses_of_function global acc_info callee locset in
           let locs_on_return = defs_of_function global acc_info callee locset in
             dug
             |> DUGraph.add_abslocs call locs_on_call entry
