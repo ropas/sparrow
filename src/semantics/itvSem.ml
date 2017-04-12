@@ -282,8 +282,6 @@ let prune : update_mode -> Spec.t -> Global.t -> Proc.t -> exp -> Mem.t -> Mem.t
 (* ******************************* *
  * Semantic functions for commands *
  * ******************************* *)
-let mem_alloc_libs = ["__ctype_b_loc"; "initscr"; "newwin"; "localtime"; "__errno_location"; "opendir"; "readdir"]
-
 let sparrow_print spec pid exps mem loc =
   if !Options.opt_verbose < 1 then ()
   else 
@@ -572,6 +570,27 @@ let sparrow_array_init mode spec node pid exps (mem, global) =
       (update mode spec global lv v mem, global)
   | _, _ -> (mem, global)
 
+let mem_alloc_libs = ["__ctype_b_loc"; "initscr"; "newwin"; "localtime"; "__errno_location"; "opendir"; "readdir"]
+let scaffolded_functions mode spec node pid (lvo,f,exps) (mem, global) =
+  if !Options.opt_scaffold then 
+    match f.vname with
+    | "fgets" -> model_fgets mode spec pid (lvo, exps) (mem, global)
+    | "sprintf" -> model_sprintf mode spec pid (lvo, exps) (mem, global)
+    | "scanf" -> model_scanf mode spec pid exps (mem, global)
+    | "getenv" -> model_input mode spec pid lvo (mem, global)
+    | "strdup" -> model_strdup mode spec node (lvo, exps) (mem, global)
+    | "gettext" -> model_assign mode spec pid (lvo, exps) (mem, global)
+    | "memcpy" -> model_memcpy mode spec pid (lvo, exps) (mem, global)
+    | "getpwent" -> model_getpwent mode spec node pid lvo f (mem,global)
+    | "strcpy" -> model_strcpy mode spec node pid exps (mem, global)
+    | "strncpy" -> model_strncpy mode spec node pid exps (mem, global)
+    | "strcat" -> model_strcat mode spec node pid exps (mem, global)
+    | "strchr" | "strrchr" -> model_strchr mode spec node pid (lvo, exps) (mem, global)
+    | s when List.mem s mem_alloc_libs -> model_alloc_one mode spec pid lvo f (mem, global)
+    | _ -> model_unknown mode spec node pid lvo f exps (mem, global)
+  else 
+    model_unknown mode spec node pid lvo f exps (mem, global)
+  
 let handle_undefined_functions mode spec node pid (lvo,f,exps) (mem,global) loc = 
   match f.vname with
   | "sparrow_arg" -> sparrow_arg mode spec pid exps (mem,global)
@@ -583,20 +602,7 @@ let handle_undefined_functions mode spec node pid (lvo,f,exps) (mem,global) loc 
   | "strlen" -> model_strlen mode spec pid (lvo, exps) (mem, global)
   | "realloc" -> model_realloc mode spec node (lvo, exps) (mem, global)
   | "calloc" -> model_calloc mode spec node (lvo, exps) (mem, global)
-  | "fgets" -> model_fgets mode spec pid (lvo, exps) (mem, global)
-  | "sprintf" -> model_sprintf mode spec pid (lvo, exps) (mem, global)
-  | "scanf" -> model_scanf mode spec pid exps (mem, global)
-  | "getenv" -> model_input mode spec pid lvo (mem, global)
-  | "strdup" -> model_strdup mode spec node (lvo, exps) (mem, global)
-  | "gettext" -> model_assign mode spec pid (lvo, exps) (mem, global)
-  | "memcpy" -> model_memcpy mode spec pid (lvo, exps) (mem, global)
-  | "getpwent" -> model_getpwent mode spec node pid lvo f (mem,global)
-  | "strcpy" -> model_strcpy mode spec node pid exps (mem, global)
-  | "strncpy" -> model_strncpy mode spec node pid exps (mem, global)
-  | "strcat" -> model_strcat mode spec node pid exps (mem, global)
-  | "strchr" | "strrchr" -> model_strchr mode spec node pid (lvo, exps) (mem, global)
-  | s when List.mem s mem_alloc_libs -> model_alloc_one mode spec pid lvo f (mem, global)
-  | _ -> model_unknown mode spec node pid lvo f exps (mem, global)
+  | _ -> scaffolded_functions mode spec node pid (lvo, f, exps) (mem, global)
 
 let bind_lvar : update_mode -> Spec.t -> Global.t -> Loc.t -> Val.t -> Mem.t -> Mem.t
 = fun mode spec global lvar v mem ->

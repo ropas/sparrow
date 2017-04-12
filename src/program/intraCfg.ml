@@ -655,7 +655,7 @@ let transform_allocs : Cil.fundec -> t -> t
   fold_node (fun n g ->
       match find_cmd n g with 
         Cmd.Ccall (Some lv, Lval (Var varinfo, _), args, loc) ->
-          if varinfo.vname = "malloc" || varinfo.vname = "__builtin_alloca"  then
+          if varinfo.vname = "malloc" || varinfo.vname = "__builtin_alloca" then
             let new_node = Node.make () in
             let preds = pred n g in 
             let succs = succ n g in

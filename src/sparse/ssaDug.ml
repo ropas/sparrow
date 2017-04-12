@@ -84,7 +84,7 @@ struct
       Hashtbl.find use_table pid 
     with _ -> 
       let locset = 
-        if Global.is_rec pid global then
+        if Global.is_rec pid global && not !Options.opt_unsound_recursion then
           let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
           PowLoc.inter locset uses
         else
@@ -100,7 +100,7 @@ struct
       Hashtbl.find def_table pid 
     with _ -> 
       let locset = 
-        if Global.is_rec pid global then
+        if Global.is_rec pid global && not !Options.opt_unsound_recursion then
           let defs = Access.defof (AccessAnalysis.get_access_reach acc_info pid) in
           PowLoc.inter locset defs
         else 
@@ -116,7 +116,7 @@ struct
       Hashtbl.find access_table pid 
     with _ -> 
       let locset = 
-        if Global.is_rec pid global then
+        if Global.is_rec pid global && not !Options.opt_unsound_recursion then
           let defs = Access.defof (AccessAnalysis.get_access_reach acc_info pid) in
           let uses = Access.useof (AccessAnalysis.get_access_reach acc_info pid) in
           let access = PowLoc.union defs uses in
