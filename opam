@@ -1,12 +1,12 @@
 opam-version: "1.2"
 name: "sparrow"
-version: "0.1"
+version: "0.2"
 maintainer: "Programming Research Laboratory (ROPAS), Seoul National University"
 authors: "Programming Research Laboratory (ROPAS), Seoul National University"
 homepage: "https://github.com/ropas/sparrow"
 bug-reports: "https://github.com/ropas/sparrow/issues"
 license: "BSD"
-dev-repo: "https://github.com/ropas/sparrow"
+dev-repo: "https://github.com/ropas/sparrow.git"
 build: [
   ["./configure" "--prefix=%{prefix}%"]
   [make]
@@ -26,5 +26,7 @@ depends: [
   "apron" {>= "0.9.10"}
   "yojson" {>= "1.2.3"}
   "lymp" {>= "0.1.3"}
-  "ppx_compare" {>= "113.33"}
+  "ppx_compare" {< "v0.9"}
+  "ppx_deriving" {>="4.1"}
 ]
+available: [ ocaml-version >= "4.04.0" ]
