@@ -13,7 +13,7 @@ Linux|MAC OSX
  
 ## Sparrow Dependencies
 To build Sparrow, you need
--   [OCaml][] >= 4.02.3
+-   [OCaml][] >= 4.04.0
 -   [OPAM][] >= 1.2.2
 -   [Batteries][] >= 2.3.1
 -   [Cil][] >= 1.7.3
@@ -22,6 +22,7 @@ To build Sparrow, you need
 -   [Yojson][] >= 1.2.3
 -   [Lymp][] >= 0.1.3
 -   [Ppx_compare][] >= 113.33
+-   [Ppx_deriving][] >= 4.1
 
 Optionally, you need the following prerequisites to use machine-learning features
 -   [Python][] >= 2.7
@@ -36,6 +37,7 @@ Optionally, you need the following prerequisites to use machine-learning feature
 [Yojson]: http://mjambon.com/yojson.html
 [Lymp]: https://github.com/dbousque/lymp
 [Ppx_compare]: https://github.com/janestreet/ppx_compare
+[Ppx_deriving]: https://github.com/whitequark/ppx_deriving
 [Python]: https://www.python.org
 [Scikit-learn]: http://scikit-learn.org
 [OPAM]: http://opam.ocaml.org
@@ -48,18 +50,14 @@ opam depext --install sparrow
 ```
 
 ## Install Sparrow from source with OPAM
-You can install the prerequisites using [OPAM][]. For example:
+Once you have cloned the source codes, run the build script to install the prerequisites and Sparrow:
 ```sh
-$ opam depext --install batteries cil apron ocamlgraph yojson lymp ppx_compare
-```
-Once you have installed all the prerequisites, clone the source codes and run the build scripts:
-```sh
-$ git clone https://github.com/ropas/sparrow.git
+$ git clone git@github.com:ropas/sparrow.git
 $ cd sparrow
-$ ./configure
-$ make
-$ make install
+$ ./build.sh
 ```
+After that, you can directly run ```make``` or ```make install```.
+
 Optionally, you need to set up environment variables to use machine-learning features
 depending on the installation prefix.
 ```sh
