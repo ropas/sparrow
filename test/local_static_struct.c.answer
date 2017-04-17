@@ -5,8 +5,8 @@ Excluded recursive functions : []
 Excluded too large functions : []
 #Procs : 2
 #Nodes : 28
-#Nodes in def-use graph : 20
-#Locs on def-use graph : 54
+#Nodes in def-use graph : 18
+#Locs on def-use graph : 33
 
 = Alarms =
 1. local_static_struct.c:10 {main} UnProven
