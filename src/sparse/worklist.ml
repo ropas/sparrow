@@ -80,21 +80,22 @@ module Make (DUGraph : Dug.S) = struct
       Hashtbl.fold (fun x _ g -> add_back_edge x g) scc (NGraph.empty (Hashtbl.length scc))
 
     let loophead_of scc ng =
-      let scores =    (* score : # incomming inner edges *)
-        NGraph.fold_edges (fun src dst scores ->
+      (* score : # incomming inner edges *)
+      let get_score n =
+        let preds = NGraph.pred ng n in
+        let preds = List.filter (fun n -> Hashtbl.mem scc n) preds in
+        List.length preds in
+      let score = 
+        NGraph.fold_edges (fun src dst score ->
             if not (Hashtbl.mem scc src) && Hashtbl.mem scc dst then  
-              let old_score = try BatMap.find dst scores with _ -> Some 0 in
-              match old_score with 
-                None -> scores
-              | Some i -> BatMap.add dst (Some (i+1)) scores
-            else scores) ng BatMap.empty
+              let new_score = get_score dst in
+              match score with
+                None -> Some (dst, new_score)
+              | Some (_, old_score) when new_score > old_score -> Some (dst, new_score)
+              | _ -> score
+            else score) ng None 
       in
-      let (max, _) = BatMap.foldi (fun node score (max_node, max_score) ->
-          match score with 
-          | Some i when i > max_score -> (Some node, i)
-          | _ -> (max_node, max_score)) scores (None, 0)
-      in
-      match max with Some n -> n | None -> assert false
+      match score with Some (n, _) -> n | None -> assert false
 
     let cut_backedges ng entry =
       let preds = NGraph.pred ng entry in
