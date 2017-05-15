@@ -40,7 +40,7 @@ let opt_pack_manual = ref false
 let opt_nobar = ref false
 let opt_narrow = ref false
 let opt_profile = ref false
-let opt_scaffold = ref false
+let opt_scaffold = ref true
 
 (* Unsoundness *)
 let opt_unsound_loop = ref BatSet.empty
@@ -101,10 +101,12 @@ let opts =
   ("-extract_loop_feat", (Arg.Set opt_extract_loop_feat), "Extract features of loops for harmless unsoundness");
   ("-extract_lib_feat", (Arg.Set opt_extract_lib_feat), "Extract features of libs for harmless unsoundness");
   ("-top_location", (Arg.Set opt_top_location), "Treat unknown locations as top locations");
-  ("-scaffold", (Arg.Set opt_scaffold), "Use scaffolding semantics");
+  ("-scaffold", (Arg.Set opt_scaffold), "Use scaffolding semantics (default)");
+  ("-no_scaffold", (Arg.Clear opt_scaffold), "Do not use scaffolding semantics");
   ("-nobar", (Arg.Set opt_nobar), "No progress bar");
   ("-show_all_query", (Arg.Set opt_show_all_query), "Show all queries");
-  ("-optil", (Arg.Set opt_optil), "Optimize IL");
+  ("-optil", (Arg.Set opt_optil), "Optimize IL (default)");
+  ("-no_optil", (Arg.Clear opt_optil), "Do not optimize IL");
   ("-marshal_in", (Arg.Set opt_marshal_in), "Read analysis results from marshaled data");
   ("-marshal_out", (Arg.Set opt_marshal_out), "Write analysis results to marshaled data");
   ("-marshal_dir", (Arg.String (fun s -> opt_marshal_dir := s)), "Directory where the marshaled data exists (default: marshal/)");
