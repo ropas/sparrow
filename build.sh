@@ -8,5 +8,5 @@ opam pin add sparrow . -n --yes
 opam depext apron
 opam install sparrow --yes --deps-only
 opam pin remove sparrow
-./configure
+./configure --enable-tests
 make
