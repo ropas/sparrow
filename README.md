@@ -55,6 +55,7 @@ Once you have cloned the source codes, run the build script to install the prere
 $ git clone git@github.com:ropas/sparrow.git
 $ cd sparrow
 $ ./build.sh
+$ eval `opam config env`
 ```
 After that, you can directly run ```make``` or ```make install```.
 
