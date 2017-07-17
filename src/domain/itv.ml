@@ -225,7 +225,7 @@ let meet : t -> t -> t = fun x y ->
 
 
 let widen : t -> t -> t = fun x y ->
-  if x = y then x else
+  if x == y then x else
   if is_bot x then normalize y else
   if is_bot y then normalize x else
     match x, y with
@@ -235,7 +235,7 @@ let widen : t -> t -> t = fun x y ->
 
 
 let narrow : t -> t -> t = fun x y ->
-  if x = y then x else
+  if x == y then x else
   if is_bot y then Bot else
   if is_bot x then invalid_arg "itv.ml: narrow(bot, _)" else
     match x, y with

@@ -162,7 +162,7 @@ struct
       BatMap.merge widen' x y
 
   let narrow : t -> t -> t = fun x y ->
-    if x = y then x else
+    if x == y then x else
       let narrow' k opt_v1 opt_v2 =
         match opt_v1, opt_v2 with
         | _, None -> None
@@ -418,7 +418,7 @@ struct
       | _, Top | Top, _ -> top
 
   let narrow : t -> t -> t = fun x y ->
-    if x = y then x else
+    if x == y then x else
       match x, y with
       | V x, V y -> 
         let narrow' k opt_v1 opt_v2 =
