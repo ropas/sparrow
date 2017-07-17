@@ -165,9 +165,7 @@ struct
     if x == y then x else
       let narrow' k opt_v1 opt_v2 =
         match opt_v1, opt_v2 with
-        | _, None -> None
-        | None, Some v ->
-          if B.eq v B.bot then None else invalid_arg "mapDom.ml:narrow"
+        | _, None | None, _ -> None
         | Some v1, Some v2 ->
           let narrowed_v = B.narrow v1 v2 in
           if B.eq narrowed_v B.bot then None else Some narrowed_v in
@@ -423,9 +421,7 @@ struct
       | V x, V y -> 
         let narrow' k opt_v1 opt_v2 =
           match opt_v1, opt_v2 with
-          | _, None -> None
-          | None, Some v ->
-            if B.eq v B.bot then None else invalid_arg "mapDom.ml:narrow"
+          | _, None | None, _ -> None
           | Some v1, Some v2 ->
             let narrowed_v = B.narrow v1 v2 in
             if B.eq narrowed_v B.bot then None else Some narrowed_v in

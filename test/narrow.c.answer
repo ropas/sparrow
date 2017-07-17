@@ -1,0 +1,19 @@
+narrow.c 
+To inline : []
+Excluded variable-arguments functions : []
+Excluded recursive functions : []
+Excluded too large functions : []
+#Procs : 2
+#Nodes : 27
+#Nodes in def-use graph : 19
+#Locs on def-use graph : 28
+
+= Alarms =
+1. narrow.c:9 {main} UnProven
+  arr[i] @main-31:  offset: [0, +oo], size: [10, 10] UnProven, allocsite: main-19
+
+#queries                 : 3
+#queries mod alarm point : 3
+#proven                  : 2
+#unproven                : 1
+#bot-involved            : 0

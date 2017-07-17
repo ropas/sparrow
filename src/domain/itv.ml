@@ -72,11 +72,16 @@ struct
     else x
 
   let lower_narrow : t -> t -> t = fun x y ->
-    if le x y then y 
+    if le x y then
+      if eq x MInf || BatSet.exists (fun k -> x = Int k) threshold then y
+      else x
     else invalid_arg ("itv.ml: Integer.lower_narrow (x, y). y < x : "^(to_string y)^" < "^(to_string x))
 
   let upper_narrow : t -> t -> t = fun x y ->
-    if le y x then y else invalid_arg "itv.ml: Integer.upper_narrow (x, y). x < y"
+    if le y x then 
+      if eq x PInf || BatSet.exists (fun k -> x = Int k) threshold then y 
+      else x
+    else invalid_arg "itv.ml: Integer.upper_narrow (x, y). x < y"
 
   let plus x y =
     match x, y with

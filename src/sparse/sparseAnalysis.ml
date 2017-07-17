@@ -130,7 +130,7 @@ struct
 
 
   (* fixpoint iterator that can be used in both widening and narrowing phases *)
-  let analyze_node_with_otable (widen,join,le) : Spec.t -> DUGraph.t -> 
+  let analyze_node_with_otable (widen,order) : Spec.t -> DUGraph.t -> 
     DUGraph.node
     -> (Worklist.t * Global.t * Table.t * Table.t)
     -> (Worklist.t * Global.t * Table.t * Table.t)
@@ -147,14 +147,12 @@ struct
           ) Dom.bot pred in
     let inputof = Table.add idx input inputof in
     let old_output = Table.find idx outputof in
-    (input, global)
-    |> Profiler.event "SparseAnalysis.run" (Sem.run Strong spec idx)
-    |> Profiler.event "SparseAnalysis.get_unstable" (get_unstable dug idx works old_output)
-    |> (function None -> (works, global, inputof, outputof) 
-        | Some (_,new_output,global) ->
-          let works = Worklist.push_set idx (BatSet.of_list (DUGraph.succ idx dug)) works in
-          (works, global, inputof, Table.add idx new_output outputof))
-
+    let (new_output, global) = Sem.run Strong spec idx (input, global) in
+    let widened = widen old_output new_output in
+    if order widened old_output then (works, global, inputof, outputof)
+    else 
+      let works = Worklist.push_set idx (BatSet.of_list (DUGraph.succ idx dug)) works in
+      (works, global, inputof, Table.add idx new_output outputof)
 
   let rec iterate f : DUGraph.t -> (Worklist.t * Global.t * Table.t * Table.t) 
      -> (Worklist.t * Global.t * Table.t * Table.t)
@@ -181,7 +179,7 @@ struct
     total_iterations := 0;
     worklist
     |> Worklist.push_set InterCfg.start_node (if (BatSet.is_empty initnodes) then DUGraph.nodesof dug else initnodes)
-    |> (fun init_worklist -> iterate (analyze_node_with_otable (Dom.B.narrow, Dom.B.join, fun x y -> Dom.B.le y x) spec) 
+    |> (fun init_worklist -> iterate (analyze_node_with_otable (Dom.narrow, fun x y -> Dom.le y x) spec) 
         dug (init_worklist, global, inputof, outputof))
     |> (fun x -> my_prerr_endline ("#iteration in narrowing : " ^ string_of_int !total_iterations); x)
 
