@@ -179,7 +179,7 @@ let add_prune_cond global cond feat =
   else feat
 
 let add_extern global cond feat =
-  let locset = AccessSem.accessof global cond sem_fun global.mem |> Access.accessof in
+  let locset = AccessSem.accessof global cond sem_fun global.mem |> Access.Info.accessof in
   let locset = Val.pow_loc_of_val (Mem.lookup locset global.mem) in 
   if PowLoc.exists Loc.is_ext_allocsite locset then { feat with extern = true }
   else feat
@@ -193,7 +193,7 @@ let incptr_itself_by_one (lv,e) =
 let add_cstring global cond_node cfg feat =
   let pid = Node.get_pid cond_node in 
   let access = AccessSem.accessof global cond_node sem_fun global.mem in
-  let locset = Access.accessof access in
+  let locset = Access.Info.accessof access in
   (* while (c = *x++)   ==>  tmp = x; x++; c = *tmp; while(c) *)
   let locset = 
     let pred0 = try IntraCfg.pred (Node.get_cfgnode cond_node) cfg with _ -> [] in
@@ -227,7 +227,7 @@ let add_cstring global cond_node cfg feat =
 
 let add_gvar global cond feat =
   let access = AccessSem.accessof global cond sem_fun global.mem in
-  let locset = Access.accessof access in
+  let locset = Access.Info.accessof access in
   let locset = PowLoc.join locset (Val.pow_loc_of_val (Mem.lookup locset global.mem)) in 
   let locset = PowLoc.remove Loc.null locset in
   if (PowLoc.exists Loc.is_gvar locset) || 
@@ -296,7 +296,7 @@ let add_conjunction cond_node cfg feat =
   else feat
 
 let add_finite_itv global cond_node feat = 
-  let access = PowLoc.remove Loc.null (Access.accessof (AccessSem.accessof global cond_node sem_fun global.mem)) in
+  let access = PowLoc.remove Loc.null (Access.Info.accessof (AccessSem.accessof global cond_node sem_fun global.mem)) in
   PowLoc.fold (fun loc feat -> 
       let v = Mem.lookup (PowLoc.singleton loc) global.mem in
       let itv = Val.itv_of_val v in
@@ -334,7 +334,7 @@ let add_close_left_arr_size_offset global cond_node cfg feat =
 let add_points_to global conds feat =
   let locset = List.fold_left (fun locset cond ->
     let access = AccessSem.accessof global cond sem_fun global.mem in
-    PowLoc.join (Access.accessof access) locset) PowLoc.bot conds
+    PowLoc.join (Access.Info.accessof access) locset) PowLoc.bot conds
   in
   { feat with points_to = float_of_int (PowLoc.cardinal locset) }
 
@@ -431,15 +431,15 @@ let add_init global conds cfg scc feat =
       match q with 
         AlarmExp.ArrayExp (_, i, _)
       | AlarmExp.DerefExp (BinOp (_, _, i, _), _) ->
-          PowLoc.join set (Access.useof (AccessSem.accessof_eval pid i global.mem)) 
+          PowLoc.join set (Access.Info.useof (AccessSem.accessof_eval pid i global.mem)) 
       | _ -> set) PowLoc.bot qs in
   let buf_in_scc = List.fold_left (fun set q ->
       match q with 
         AlarmExp.ArrayExp (arr, _, _) -> 
-          PowLoc.join set (Access.useof (AccessSem.accessof_eval pid (Lval arr) global.mem)) 
+          PowLoc.join set (Access.Info.useof (AccessSem.accessof_eval pid (Lval arr) global.mem)) 
       | AlarmExp.DerefExp (BinOp (_, arr, _, _), _)
       | AlarmExp.DerefExp (arr, _) -> 
-          PowLoc.join set (Access.useof (AccessSem.accessof_eval pid arr global.mem)) 
+          PowLoc.join set (Access.Info.useof (AccessSem.accessof_eval pid arr global.mem)) 
       | _ -> set) PowLoc.bot qs in
   let feat = List.fold_left (fun feat node ->
       let cmd = IntraCfg.find_cmd node cfg in

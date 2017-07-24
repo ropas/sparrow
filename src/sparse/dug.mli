@@ -44,6 +44,6 @@ sig
   val to_json           : t -> Yojson.Safe.json
 end
 
-module Make (Dom : MapDom.CPO) : S 
+module Make (Dom : InstrumentedMem.S) : S 
   with type Loc.t = Dom.A.t 
   and type PowLoc.t = Dom.PowA.t

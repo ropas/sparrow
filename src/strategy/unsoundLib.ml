@@ -161,7 +161,7 @@ let add_points_to global node exps feat =
   if exps = [] then feat 
   else
     let locset = 
-      PowLoc.remove Loc.null (Access.accessof (AccessSem.accessof global node sem_fun global.mem))
+      PowLoc.remove Loc.null (Access.Info.accessof (AccessSem.accessof global node sem_fun global.mem))
     in
     { feat with points_to = float_of_int (PowLoc.cardinal locset) /. (float_of_int (List.length exps))  }
 
@@ -170,7 +170,7 @@ let add_extern global node exps feat =
   else
     let pid = Node.get_pid node in
     let has_extern e = 
-      let locset = Access.accessof (AccessSem.accessof_eval pid e global.mem) in
+      let locset = Access.Info.accessof (AccessSem.accessof_eval pid e global.mem) in
       let v = Mem.lookup locset global.mem in
       let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array)  in 
       let locset = PowLoc.join (Val.pow_loc_of_val (Mem.lookup locset global.mem))
@@ -183,7 +183,7 @@ let add_extern global node exps feat =
     { feat with extern = if count /. (float_of_int (List.length exps)) > 0.0 then 1.0 else 0.0 }
 
 let add_gvar global node feat =
-  let locset = Access.accessof (AccessSem.accessof global node sem_fun global.mem) in
+  let locset = Access.Info.accessof (AccessSem.accessof global node sem_fun global.mem) in
   let v = Mem.lookup locset global.mem in
   let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array) 
         |> PowLoc.join locset in 
@@ -212,7 +212,7 @@ let add_finite global node exps feat =
 let add_cstring global cond_node cfg exps feat =
   let pid = Node.get_pid cond_node in
   let is_cstring e = 
-    let use = Access.useof (AccessSem.accessof_eval pid e global.mem) in
+    let use = Access.Info.useof (AccessSem.accessof_eval pid e global.mem) in
     PowLoc.exists (fun loc ->
         let v = Mem.lookup (PowLoc.singleton loc) global.mem in
         let nullpos = ArrayBlk.nullof (Val.array_of_val v) in 
@@ -236,12 +236,12 @@ let add_inside_loop global node exps pid scc_list feat =
 
 let add_use_ret_in_loop global node exps pid scc_list feat =
   let def = PowLoc.filter (fun x -> not (Loc.is_ext_allocsite x)) 
-    (Access.defof (AccessSem.accessof global node sem_fun global.mem)) in
+    (Access.Info.defof (AccessSem.accessof global node sem_fun global.mem)) in
   let b = 
     List.exists (fun loop ->
       List.exists (fun x -> 
           let inter_node = InterCfg.Node.make pid x in
-          let use = Access.useof (AccessSem.accessof global inter_node sem_fun global.mem) in
+          let use = Access.Info.useof (AccessSem.accessof global inter_node sem_fun global.mem) in
           (inter_node <> node) && ((PowLoc.meet use def) <> PowLoc.bot)) loop) scc_list
   in
   { feat with use_ret_in_loop = b }
@@ -249,28 +249,28 @@ let add_use_ret_in_loop global node exps pid scc_list feat =
 let add_update_param_in_loop global node exps pid scc_list feat =
   let b = 
     List.exists (fun loop ->
-      let use = List.fold_left (fun use e -> Access.useof (AccessSem.accessof_eval pid e global.mem)) PowLoc.bot exps in
+      let use = List.fold_left (fun use e -> Access.Info.useof (AccessSem.accessof_eval pid e global.mem)) PowLoc.bot exps in
       List.exists (fun x -> 
           let inter_node = InterCfg.Node.make pid x in
-          let def = Access.defof (AccessSem.accessof global inter_node sem_fun global.mem) in
+          let def = Access.Info.defof (AccessSem.accessof global inter_node sem_fun global.mem) in
           (inter_node <> node) && ((PowLoc.meet use def) <> PowLoc.bot)) loop) scc_list
   in
   { feat with update_param_in_loop = b }
 
 let add_update_param_itself global node exps pid scc_list feat =
   let access = AccessSem.accessof global node sem_fun global.mem in
-  let def = PowLoc.filter (fun x -> not (Loc.is_ext_allocsite x)) (Access.defof access) in
-  let use = PowLoc.filter (fun x -> not (Loc.is_ext_allocsite x)) (Access.useof access) in
+  let def = PowLoc.filter (fun x -> not (Loc.is_ext_allocsite x)) (Access.Info.defof access) in
+  let use = PowLoc.filter (fun x -> not (Loc.is_ext_allocsite x)) (Access.Info.useof access) in
   let b = PowLoc.bot <> (PowLoc.meet def use) in
     { feat with update_param_itself = b }
 
 let add_out_of_fun global node cfg feat =
-  let def = Access.defof (AccessSem.accessof global node sem_fun global.mem) in
+  let def = Access.Info.defof (AccessSem.accessof global node sem_fun global.mem) in
   let use_of_ret = IntraCfg.fold_node (fun intra_node locset ->
       match IntraCfg.find_cmd intra_node cfg with
         IntraCfg.Cmd.Creturn (Some e, _) -> 
           let node = InterCfg.Node.make (IntraCfg.get_pid cfg) intra_node in
-          let use = Access.useof (AccessSem.accessof global node sem_fun global.mem) in
+          let use = Access.Info.useof (AccessSem.accessof global node sem_fun global.mem) in
           PowLoc.join use locset
       | _ -> locset) cfg PowLoc.bot
   in

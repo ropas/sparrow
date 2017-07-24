@@ -32,7 +32,7 @@ struct
   module AccessAnalysis = AccessAnalysis.Make (Sem)
   module Access = AccessAnalysis.Access
   module DUGraph = Dug.Make (Dom)
-  module SsaDug = SsaDug.Make (DUGraph) (AccessAnalysis)
+  module SsaDug = SsaDug.Make (DUGraph) (Access)
   module Worklist = Worklist.Make (DUGraph)
   module Table = MapDom.MakeCPO (Node) (Sem.Dom)
   module Spec = Sem.Spec
@@ -204,7 +204,7 @@ struct
 
   let bind_fi_locs global mem_fi dug access inputof =
     DUGraph.fold_node (fun n t ->
-      let used = Access.useof (AccessAnalysis.get_access access n) in
+      let used = Access.Info.useof (Access.find_node n access) in
       let pred = DUGraph.pred n dug in
       let locs_on_edge = list_fold (fun p -> PowLoc.union (DUGraph.get_abslocs p n dug)) pred PowLoc.empty in
       let locs_not_on_edge = PowLoc.diff used locs_on_edge in
@@ -225,11 +225,11 @@ struct
         let mem_with_access = 
           PowLoc.fold (fun loc -> 
             Dom.add loc (Dom.find loc mem_fi) 
-          ) (Access.useof (AccessAnalysis.get_access access node)) Dom.bot in
+          ) (Access.Info.useof (Access.find_node node access)) Dom.bot in
           Table.add node mem_with_access t 
     ) nodes inputof
 
-  let initialize : Spec.t -> Global.t -> DUGraph.t -> AccessAnalysis.t -> Table.t 
+  let initialize : Spec.t -> Global.t -> DUGraph.t -> Access.t -> Table.t 
   = fun spec global dug access ->
     Table.add InterCfg.start_node (Sem.initial spec.Spec.locset) Table.empty
     |> cond (!Options.opt_pfs < 100) (bind_fi_locs global spec.Spec.premem dug access) id

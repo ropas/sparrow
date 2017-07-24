@@ -51,7 +51,7 @@ sig
   val to_json           : t -> Yojson.Safe.json
 end
 
-module Make (Dom: MapDom.CPO) =
+module Make (Dom : InstrumentedMem.S) =
 struct
   type node = BasicDom.Node.t
   module PowLoc = Dom.PowA

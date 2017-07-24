@@ -405,7 +405,7 @@ let extract_assume node pid e mem global feature =
   (match CilHelper.make_cond_simple e with
   | None -> id
   | Some cond ->
-    PowLoc.fold add_prune_simple (Access.defof (AccessSem.accessof global node sem_fun mem))
+    PowLoc.fold add_prune_simple (Access.Info.defof (AccessSem.accessof global node sem_fun mem))
     >>>
     begin
       (match cond with
@@ -421,7 +421,7 @@ let extract_assume node pid e mem global feature =
 
 let extract_alloc node pid (lv,e) mem global feature =
   let locs_lv = eval_lv pid lv mem in 
-  let locs_e = Access.useof (AccessSem.accessof global node sem_fun mem) in
+  let locs_e = Access.Info.useof (AccessSem.accessof global node sem_fun mem) in
   feature 
   |> (PowLoc.fold add_pass_to_alloc locs_e)
   |> (PowLoc.fold add_return_from_alloc locs_lv)
@@ -431,10 +431,10 @@ let extract_call_realloc node pid (lvo,fe,el) mem global feature =
   | Some lv, Lval (Var f, NoOffset) when f.vname = "realloc" ->
     let locs_lv = eval_lv pid lv mem in
     let locs_e = 
-      Access.useof (
+      Access.Info.useof (
         list_fold (fun e access -> 
           AccessSem.accessof global node sem_fun mem
-          |> Access.union access) el Access.empty)
+          |> Access.Info.union access) el Access.Info.empty)
     in
       feature
       |> (PowLoc.fold add_pass_to_realloc locs_e)
@@ -449,7 +449,7 @@ let extract_call_ext_fun node pid (lvo,fe,el) mem global feature =
   match lvo,fe with
   | Some lv, Cil.Lval (Cil.Var f, Cil.NoOffset) when is_undef f.vname global -> 
     PowLoc.fold add_return_from_ext_fun 
-      (Access.useof (AccessSem.accessof global node sem_fun mem))
+      (Access.Info.useof (AccessSem.accessof global node sem_fun mem))
       feature
   | _ -> feature
 
@@ -462,7 +462,7 @@ let extract_used_index pid mem cmd feature =
   let queries = AlarmExp.collect cmd in
     list_fold (fun q ->
       let locs = 
-        Access.useof 
+        Access.Info.useof 
           (accessof_eval pid 
             (match q with
             | AlarmExp.ArrayExp (_,e,_) -> e
@@ -476,7 +476,7 @@ let extract_used_buf pid mem cmd feature =
   let queries = AlarmExp.collect cmd in
     list_fold (fun q ->
       let locs = 
-        Access.useof 
+        Access.Info.useof 
           (accessof_eval pid 
             (match q with
             | AlarmExp.ArrayExp (lv,_,_) -> Lval lv
@@ -492,8 +492,8 @@ let extract_loops pid mem cmd node icfg feature =
   else 
    match cmd with
    | IntraCfg.Cmd.Cset (lv,e,_) -> 
-     let defs = Access.useof (accessof_eval pid (Lval lv) mem) in
-     let uses = Access.useof (accessof_eval pid e mem) in
+     let defs = Access.Info.useof (accessof_eval pid (Lval lv) mem) in
+     let uses = Access.Info.useof (accessof_eval pid e mem) in
        PowLoc.fold add_mod_inside_loops defs 
         (PowLoc.fold add_used_inside_loops uses feature)
    | _ -> feature
@@ -529,7 +529,7 @@ let extract2 : InterCfg.t -> Mem.t -> Global.t -> InterCfg.Node.t -> feature -> 
   match InterCfg.cmdof icfg node with
   | Cset (lv,e,_) ->
     let locs_lv = eval_lv pid lv mem in
-    let locs_e  = Access.useof (accessof_eval pid e mem) in
+    let locs_e  = Access.Info.useof (accessof_eval pid e mem) in
     let e = simplify_exp e in
     (match lv,e with
      | (Var x,NoOffset), Lval (Var y,NoOffset) -> (* x := y *)
@@ -564,7 +564,7 @@ let build_copy_graph icfg mem =
       | (Var x,NoOffset), Lval (Var y,NoOffset) ->
         let pid = InterCfg.Node.get_pid n in
         let lhs = PowLoc.choose (eval_lv pid lv mem) in
-        let rhs = PowLoc.choose (Access.useof (accessof_eval pid e mem)) in
+        let rhs = PowLoc.choose (Access.Info.useof (accessof_eval pid e mem)) in
           G.add_edge g rhs lhs 
       | _ -> g)
     | _ -> g
@@ -606,7 +606,7 @@ let extract_feature : Global.t -> PowLoc.t -> feature
   let fields = PowLoc.filter Loc.is_field locset in
   let allocsites = PowLoc.filter Loc.is_allocsite locset in
   let ext_allocsites = PowLoc.filter Loc.is_ext_allocsite allocsites in
-  let single_defs = AccessAnalysis.get_single_defs (AccessAnalysis.get_defs_of access) in
+  let single_defs = Access.find_single_defs access in
   let feature = try traverse1 global with e -> prerr_endline "traverse1"; raise e in (* first iteration *)
   let feature = traverse2 global feature in (* second iteration *)
   let feature = closure global feature in

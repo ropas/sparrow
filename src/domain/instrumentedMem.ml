@@ -13,7 +13,7 @@ sig
   include MapDom.CPO
   module Access : Access.S with type Loc.t = A.t and type PowLoc.t = PowA.t
   val init_access : unit -> unit
-  val return_access : unit -> Access.t
+  val return_access : unit -> Access.info
 end 
 
 module Make (Mem : MapDom.CPO) = 
@@ -23,27 +23,27 @@ struct
   module Loc = A
   module Val = B
   module Access = Access.Make(Mem)
-  let access = ref Access.empty
+  let access = ref Access.Info.empty
   let access_mode = ref false
   let init_access : unit -> unit 
-  = fun () -> access_mode := true; access := Access.empty; ()
+  = fun () -> access_mode := true; access := Access.Info.empty; ()
 
-  let return_access : unit -> Access.t
+  let return_access : unit -> Access.info
   = fun () -> access_mode := false; !access
 
   let add k v m =
     (if !access_mode then 
-      access := Access.add Access.def k !access);
+      access := Access.Info.add Access.Info.def k !access);
     add k v m
 
   let weak_add k v m =
     (if !access_mode then 
-      access := Access.add Access.all k !access);
+      access := Access.Info.add Access.Info.all k !access);
     weak_add k v m
 
   let find : A.t -> t -> B.t 
   = fun k m ->
      (if !access_mode && not (eq m bot) then 
-      access := Access.add Access.use k !access);
+      access := Access.Info.add Access.Info.use k !access);
     find k m 
 end

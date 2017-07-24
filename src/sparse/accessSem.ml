@@ -15,13 +15,13 @@ open ItvDom
 module type S = 
 sig
   include AbsSem.S
-  val accessof : ?locset: Dom.PowA.t -> Global.t -> BasicDom.Node.t -> (BasicDom.Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Dom.Access.t 
+  val accessof : ?locset: Dom.PowA.t -> Global.t -> BasicDom.Node.t -> (BasicDom.Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Dom.Access.info
 end
 
 module Make (Sem : AbsSem.S) =
 struct
   include Sem
-  let accessof ?(locset=Dom.PowA.empty): Global.t -> Node.t -> (Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Dom.Access.t 
+  let accessof ?(locset=Dom.PowA.empty): Global.t -> Node.t -> (Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Dom.Access.info
   = fun global node f mem -> 
     Dom.init_access ();
     let _ = f node (mem,global) in

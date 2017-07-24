@@ -451,14 +451,14 @@ let run : update_mode -> Spec.t -> Node.t -> Dom.t * Global.t -> Dom.t * Global.
    end);
   (mem, global)
 
-let accessof ?(locset=PackConf.empty): Global.t -> Node.t -> (Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Access.t
+let accessof ?(locset=PackConf.empty): Global.t -> Node.t -> (Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Access.info
 = fun global node f mem ->
   let ptrmem = ItvDom.Table.find node global.table in
   let (itv_use, itv_def) = 
     ptrmem
     |> ItvAccessSem.accessof global node (ItvSem.run AbsSem.Strong ItvSem.Spec.empty)
     |> tuple 
-    |> Tuple2.map ItvSem.Dom.Access.useof ItvSem.Dom.Access.defof
+    |> Tuple2.map ItvSem.Dom.Access.Info.useof ItvSem.Dom.Access.Info.defof
   in
   Dom.init_access ();
   ignore(f node (mem,global));
@@ -469,15 +469,15 @@ let accessof ?(locset=PackConf.empty): Global.t -> Node.t -> (Node.t -> Dom.t * 
         match l with 
           BasicDom.Loc.Allocsite a -> 
             let size_pack = OctLoc.of_size a |> PackConf.get_pack locset in
-            access |> Access.add Access.use loc_pack |> Access.add Access.use size_pack
-        | _ -> access |> Access.add Access.use loc_pack) itv_use
+            access |> Access.Info.add Access.Info.use loc_pack |> Access.Info.add Access.Info.use size_pack
+        | _ -> access |> Access.Info.add Access.Info.use loc_pack) itv_use
   |> PowLoc.fold (fun l access ->
         let loc_pack = OctLoc.of_loc l |> PackConf.get_pack locset in
         match l with 
           BasicDom.Loc.Allocsite a -> 
             let size_pack = OctLoc.of_size a |> PackConf.get_pack locset in
-            access |> Access.add Access.all loc_pack |> Access.add Access.all size_pack 
-        | _ -> access |> Access.add Access.all loc_pack) itv_def
+            access |> Access.Info.add Access.Info.all loc_pack |> Access.Info.add Access.Info.all size_pack 
+        | _ -> access |> Access.Info.add Access.Info.all loc_pack) itv_def
 
 let initial locset = Mem.top locset 
 

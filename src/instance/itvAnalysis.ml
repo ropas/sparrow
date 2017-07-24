@@ -16,7 +16,6 @@ open Vocab
 open Frontend
 open IntraCfg
 open ItvDom
-open ItvSem
 open ArrayBlk
 open AlarmExp 
 open Report 
@@ -94,7 +93,7 @@ let inspect_aexp_bo : InterCfg.node -> AlarmExp.t -> Mem.t -> query list -> quer
           { node = node; exp = aexp; loc = loc; allocsite = a; 
           status = status; desc = desc }) lst
     | DerefExp (e,loc) ->
-        let v = eval (InterCfg.Node.get_pid node) e mem in
+        let v = ItvSem.eval (InterCfg.Node.get_pid node) e mem in
         let lst = check_bo v None in 
           if Val.eq Val.bot v then 
             List.map (fun (status,a,desc) -> 
@@ -108,8 +107,8 @@ let inspect_aexp_bo : InterCfg.node -> AlarmExp.t -> Mem.t -> query list -> quer
               else { node = node; exp = aexp; loc = loc; status = status; allocsite = a; 
                      desc = desc }) lst
     | Strcpy (e1, e2, loc) ->
-        let v1 = eval (InterCfg.Node.get_pid node) e1 mem in
-        let v2 = eval (InterCfg.Node.get_pid node) e2 mem in
+        let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 mem in
+        let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 mem in
         let v2 = Val.of_itv (ArrayBlk.nullof (Val.array_of_val v2)) in 
         let lst = check_bo v1 (Some v2) in
         List.map (fun (status,a,desc) -> { node = node; exp = aexp; loc = loc; allocsite = a; 
@@ -140,7 +139,7 @@ let inspect_aexp_nd : InterCfg.node -> AlarmExp.t -> Mem.t -> query list -> quer
 =fun node aexp mem queries ->
   (match aexp with
   | DerefExp (e,loc) ->
-    let v = eval (InterCfg.Node.get_pid node) e mem in
+    let v = ItvSem.eval (InterCfg.Node.get_pid node) e mem in
     let lst = check_nd v in 
       if Val.eq Val.bot v then 
         List.map (fun (status,a,desc) -> { node = node; exp = aexp; loc = loc; allocsite = a; 
@@ -164,7 +163,7 @@ let inspect_aexp_dz : InterCfg.node -> AlarmExp.t -> Mem.t -> query list -> quer
 = fun node aexp mem queries -> 
   (match aexp with 
       DivExp (_, e, loc) ->
-      let v = eval (InterCfg.Node.get_pid node) e mem in
+      let v = ItvSem.eval (InterCfg.Node.get_pid node) e mem in
       let lst = check_dz v in 
         List.map (fun (status,a,desc) -> { node = node; exp = aexp; loc = loc; allocsite = None; 
           status = status; desc = desc }) lst
