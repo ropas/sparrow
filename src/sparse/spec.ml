@@ -11,6 +11,7 @@
 module type S = 
 sig
   module Dom : InstrumentedMem.S
+
   type t = {
     locset : Dom.PowA.t;
     locset_fs : Dom.PowA.t;
@@ -20,7 +21,6 @@ sig
     unsound_lib : string BatSet.t;
     unsound_update : bool;
     unsound_bitwise : bool;
-
   }
   val empty : t
 end
@@ -28,9 +28,11 @@ end
 module Make(Dom: InstrumentedMem.S) =
 struct
   module Dom = Dom
+  module PowLoc = Dom.PowA
+
   type t = {
-    locset : Dom.PowA.t;
-    locset_fs : Dom.PowA.t;
+    locset : PowLoc.t;
+    locset_fs : PowLoc.t;
     ptrinfo : ItvDom.Table.t;
     premem : Dom.t;
     (* unsoundness *)

@@ -45,5 +45,4 @@ sig
 end
 
 module Make (Dom : InstrumentedMem.S) : S 
-  with type Loc.t = Dom.A.t 
-  and type PowLoc.t = Dom.PowA.t
+  with type Loc.t = Dom.A.t and type PowLoc.t = Dom.PowA.t

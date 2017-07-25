@@ -17,7 +17,9 @@ type update_mode =
 module type S = 
 sig
   module Dom : InstrumentedMem.S
-  module Spec : Spec.S with type Dom.t = Dom.t and type Dom.A.t = Dom.A.t and type Dom.PowA.t = Dom.PowA.t
-  val run : update_mode -> Spec.t -> BasicDom.Node.t -> Dom.t * Global.t -> Dom.t * Global.t
+  module Spec : Spec.S with type Dom.t = Dom.t and type Dom.A.t = Dom.A.t
+    and type Dom.PowA.t = Dom.PowA.t
+  val run : update_mode -> Spec.t -> BasicDom.Node.t -> Dom.t * Global.t
+    -> Dom.t * Global.t
   val initial : Dom.PowA.t -> Dom.t
 end 

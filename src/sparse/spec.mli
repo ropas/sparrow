@@ -11,7 +11,7 @@
 module type S = 
 sig
   module Dom : InstrumentedMem.S
-  
+
   type t = {
     locset : Dom.PowA.t;
     locset_fs : Dom.PowA.t;
@@ -25,5 +25,6 @@ sig
   val empty : t
 end
 
-module Make(Dom: InstrumentedMem.S) : 
-  S with type Dom.t = Dom.t and type Dom.A.t = Dom.A.t and type Dom.PowA.t = Dom.PowA.t
+module Make(Dom: InstrumentedMem.S) : S 
+  with type Dom.t = Dom.t and type Dom.A.t = Dom.A.t
+  and type Dom.PowA.t = Dom.PowA.t
