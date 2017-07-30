@@ -56,7 +56,5 @@ module MakeCPO (A:AbsDom.SET)(B:AbsDom.CPO) : CPO
   and type PowA.t = PowDom.MakeCPO(A).t
   and type A.t = A.t and type B.t = B.t 
 
-module MakeLAT (A:AbsDom.SET)(B:AbsDom.CPO) : sig 
-  type t = V of B.t BatMap.Make(A).t | Top
-  include LAT with type t := t
-end with type PowA.t = PowDom.MakeCPO(A).t and type A.t = A.t and type B.t = B.t 
+module MakeLAT (A:AbsDom.SET)(B:AbsDom.CPO) : LAT
+  with type A.t = A.t and type B.t = B.t

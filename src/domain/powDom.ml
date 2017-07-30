@@ -136,60 +136,51 @@ struct
   let of_list = BatSet.of_list
 end
 
-module MakeWithTop (A:SET) =
+module MakeLAT (A:SET) =
 struct
-  module BatSet = BatSet.Make(A)
+  module PowCPO = MakeCPO(A)
+  type t = V of PowCPO.t | Top [@@deriving compare]
   type elt = A.t
-  type t = V of BatSet.t | Top [@@deriving compare]
   
   exception Error
 
-  let to_string : t -> string = function
+  let to_string = function
     | Top -> "top"
-    | V x ->
-      if BatSet.is_empty x then "bot" else
-        let add_string_of_v v acc = link_by_sep "," (A.to_string v) acc in
-        "{" ^ BatSet.fold add_string_of_v x "" ^ "}"
+    | V x -> PowCPO.to_string x
 
-  let le : t -> t -> bool = fun x y ->
-    if x == y then true else 
-      match x, y with 
-      | _, Top -> true
-      | V x, V y -> BatSet.subset x y
-      | _, _ -> false
+  let le x y =
+    match x, y with
+    | V x, V y -> PowCPO.le x y
+    | _, Top -> true
+    | _, _ -> false
 
-  let eq : t -> t -> bool = fun x y ->
-    if x == y then true else 
-      match x, y with 
-      | Top, Top -> true
-      | V x, V y -> BatSet.equal x y
-      | _, _ -> false
+  let eq x y =
+    match x, y with 
+    | V x, V y -> PowCPO.eq x y
+    | Top, Top -> true
+    | _, _ -> false
 
-  let bot : t = V BatSet.empty
-  let top : t = Top
+  let bot = V PowCPO.bot
+  let top = Top
   let empty = bot
 
-  let join : t -> t -> t = fun x y ->
-    if x == y then y else
-    if le x y then y else
-    if le y x then x else
-      match x, y with 
-      | Top, _ | _, Top -> top
-      | V x, V y -> V (BatSet.union x y)
+  let join x y =
+    match x, y with 
+    | V x, V y -> V (PowCPO.join x y)
+    | Top, _ | _, Top -> top
 
   let union = join 
+
   let union_small_big small big = 
     match small, big with
+    | V small, V big -> V (PowCPO.union_small_big small big)
     | Top, _ | _, Top -> top
-    | V small, V big -> V (BatSet.fold BatSet.add small big)
 
-  let meet : t -> t -> t = fun x y ->
-    if le x y then x else
-    if le y x then y else
-      match x, y with 
-      | Top, _ -> y
-      | _, Top -> x
-      | V x, V y -> V (BatSet.inter x y)
+  let meet x y =
+    match x, y with 
+    | V x, V y -> V (PowCPO.meet x y)
+    | Top, _ -> y
+    | _, Top -> x
 
   let inter = meet
 
@@ -199,16 +190,15 @@ struct
 
   let narrow = meet
 
-  let filter : (elt -> bool) -> t -> t = fun f s ->
-    match s with 
-    | V s -> V (BatSet.filter f s)
+  let filter f = function
+    | V s -> V (PowCPO.filter f s)
     | Top -> top
 
-  let fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-  = fun f s a ->
+  let fold f s a =
     match s with 
+    | V s -> PowCPO.fold f s a
     | Top -> a
-    | V s -> BatSet.fold f s a
+
 
   let fold2 : (elt -> elt -> 'a -> 'a) -> t -> t -> 'a -> 'a 
   = fun f s1 s2 -> fold (fun x -> fold (f x) s2) s1
@@ -216,62 +206,59 @@ struct
   let map f s = 
     match s with 
     | Top -> top 
-    | V s -> V (BatSet.map f s)
+    | V s -> V (PowCPO.map f s)
 
   let iter : (elt -> unit) -> t -> unit 
   = fun f s -> 
     match s with 
     | Top -> ()
-    | V s -> BatSet.iter f s
+    | V s -> PowCPO.iter f s
 
-  let singleton : elt -> t = fun e ->
-    V (BatSet.singleton e)
+  let singleton e = V (PowCPO.singleton e)
 
   let subset = le
 
-  let cardinal : t -> int = function 
-    | V s -> BatSet.cardinal s
+  let cardinal = function
+    | V s -> PowCPO.cardinal s
     | Top -> -1 
 
-  let mem : elt -> t -> bool 
-  = fun e s ->
-    match s with 
-    | V s -> BatSet.mem e s
+  let mem e = function
+    | V s -> PowCPO.mem e s
     | Top -> true
 
   let add e = function
-    | V s -> V (BatSet.add e s)
+    | V s -> V (PowCPO.add e s)
     | Top -> Top 
 
   let diff x y = 
     match x, y with 
+    | V x, V y -> V (PowCPO.diff x y)
     | Top, _ -> top
     | _, Top -> bot
-    | V x, V y -> V (BatSet.diff x y)
 
   let choose = function
+    | V s -> PowCPO.choose s
     | Top -> raise (Failure "Error: choose")
-    | V s -> BatSet.choose s
   
   let remove e = function 
+    | V s -> V (PowCPO.remove e s)
     | Top -> top
-    | V s -> V (BatSet.remove e s)
 
   let elements = function 
-    | V s -> BatSet.elements s
+    | V s -> PowCPO.elements s
     | Top -> raise (Failure "Error: elements")
 
   let is_empty = function
-    | V s -> BatSet.is_empty s
+    | V s -> PowCPO.is_empty s
     | _ -> false
 
   let for_all f = function
-    | V s -> BatSet.for_all f s
+    | V s -> PowCPO.for_all f s
     | _ -> false
 
   let exists f = function
-    | V s -> BatSet.exists f s
+    | V s -> PowCPO.exists f s
     | _ -> false
 
-  let of_list s = V (BatSet.of_list s)
+  let of_list s = V (PowCPO.of_list s)
 end

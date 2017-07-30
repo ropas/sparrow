@@ -53,7 +53,4 @@ sig
 end
 
 module MakeCPO (A:AbsDom.SET) : CPO with type elt = A.t and type t = BatSet.Make(A).t
-module MakeWithTop (A:AbsDom.SET) : sig
-  type t = V of BatSet.Make(A).t | Top 
-  include LAT with type t := t
-end with type elt = A.t
+module MakeLAT (A:AbsDom.SET) : LAT with type elt = A.t
