@@ -1,0 +1,10 @@
+S src/**
+B _build/**
+PKG apron
+PKG apron.octMPQ
+PKG batteries
+PKG cil
+PKG lymp
+PKG ocamlgraph
+PKG ppx_compare
+PKG yojson
