@@ -47,6 +47,9 @@ struct
 
   let to_string x = 
     "("^(A.to_string (fst x))^", "^(B.to_string (snd x))^")"
+
+  let pp fmt (a, b) =
+    Format.fprintf fmt "(%a, %a)" A.pp a B.pp b
 end
 
 module Make5 (A:CPO) (B:CPO) (C:CPO) (D:CPO) (E:CPO) =
@@ -81,4 +84,7 @@ struct
   let to_string x = 
     "("^(A.to_string (fst x))^", "^(B.to_string (snd x))^", "^(C.to_string (trd x))
     ^", "^(D.to_string (frth x))^", "^(E.to_string (fifth x))^")"
+
+  let pp fmt (a, b, c, d, e) =
+    Format.fprintf fmt "( %a, %a, %a, %a, %a )" A.pp a B.pp b C.pp c D.pp d E.pp e
 end

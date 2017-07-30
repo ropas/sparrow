@@ -13,7 +13,13 @@ open ProdDom
 open BasicDom
 open Vocab
 
-module Struct = struct include String let to_string = id end
+module Struct = 
+struct
+  include String
+  let to_string = id
+  let pp fmt x = Format.fprintf fmt "%s" x
+end
+
 module PowStruct = PowDom.MakeCPO (Struct)
 
 include MapDom.MakeLAT (Loc) (PowStruct)

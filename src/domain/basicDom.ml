@@ -31,6 +31,7 @@ struct
   let to_string = function
     | Input -> "__extern__"
     | Unknown s -> "__extern__" ^ s
+  let pp fmt x = Format.fprintf fmt "%s" (to_string x)
 end
 
 module IntAllocsite = 
@@ -39,6 +40,7 @@ struct
   and is_string = bool   
   
   let to_string (node,_) = Node.to_string node
+  let pp fmt x = Format.fprintf fmt "%s" (to_string x)
 end
 
 module Allocsite = 
@@ -54,19 +56,23 @@ struct
   let is_ext_allocsite = function External _ -> true | _ -> false
   let is_cmd_arg = function External e -> ExtAllocsite.is_cmd_arg e | _ -> false
 
-  let allocsite_of_ext : string option -> t 
-  = function None -> External (ExtAllocsite.input)
-  | Some fid -> External (ExtAllocsite.unknown fid)
+  let allocsite_of_ext = function 
+    | None -> External (ExtAllocsite.input)
+    | Some fid -> External (ExtAllocsite.unknown fid)
 
-  let to_string 
-  = function Internal i -> IntAllocsite.to_string i
-  | External e -> ExtAllocsite.to_string e
+  let to_string = function
+    | Internal i -> IntAllocsite.to_string i
+    | External e -> ExtAllocsite.to_string e
+
+  let pp fmt = function
+    | Internal i -> Format.fprintf fmt "%a" IntAllocsite.pp i
+    | External e -> Format.fprintf fmt "%a" ExtAllocsite.pp e
 end
 
 module Loc = 
 struct 
-  type t = GVar of string * Cil.typ | LVar of Proc.t * string * Cil.typ | Allocsite of Allocsite.t 
-  | Field of t * field * Cil.typ
+  type t = GVar of string * Cil.typ | LVar of Proc.t * string * Cil.typ
+         | Allocsite of Allocsite.t | Field of t * field * Cil.typ
   and field = string 
 
   let rec compare x y = 
@@ -89,6 +95,8 @@ struct
     | LVar (p, x, _) -> "(" ^ Proc.to_string p ^ "," ^ x ^ ")"
     | Allocsite a -> Allocsite.to_string a
     | Field (a, f, _) -> to_string a ^ "." ^ f
+
+  let pp fmt x = Format.fprintf fmt "%s" (to_string x)
 
   let dummy = GVar ("__dummy__", Cil.voidType)
   let null = GVar ("NULL", Cil.voidPtrType)

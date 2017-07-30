@@ -274,7 +274,10 @@ struct
   let mem = BatMap.mem
 
   let for_all = BatMap.for_all
+
   let exists = BatMap.exists
+
+  let bindings = BatMap.bindings
 
   let le_small_big : t -> t -> bool = fun small_x big_y ->
     let le_a_map k v acc = acc && B.le v (find k big_y) in
@@ -284,6 +287,15 @@ struct
     let meet_a_map k v = B.meet v (find k big_x) in
     if le_small_big small_y big_x then small_y else
       mapi meet_a_map small_y
+
+  let pp fmt m =
+    let rec pp_map fmt = function
+      | [] -> ()
+      | [(k, v)] -> Format.fprintf fmt "@[<h>%a -> %a@]" A.pp k B.pp v
+      | (k, v)::t -> Format.fprintf fmt "@[<h>%a -> %a@\n@]" A.pp k B.pp v; pp_map fmt t
+    in
+    if is_empty m then Format.fprintf fmt "bot"
+    else Format.fprintf fmt "@[<hov 2>{ %a }@]" pp_map (bindings m)
 end
 
 module MakeLAT (A:AbsDom.SET) (B:AbsDom.CPO) =
@@ -439,6 +451,10 @@ struct
     | V m -> MapCPO.exists f m
     | Top -> raise (Failure "Error: for_all")
 
+  let bindings = function
+    | V m -> MapCPO.bindings m
+    | Top -> raise (Failure "Error: bindings")
+
   let le_small_big : t -> t -> bool = fun small_x big_y ->
     let le_a_map k v acc = acc && B.le v (find k big_y) in
     foldi le_a_map small_x true
@@ -447,4 +463,8 @@ struct
     let meet_a_map k v = B.meet v (find k big_x) in
     if le_small_big small_y big_x then small_y else
       mapi meet_a_map small_y
+  
+  let pp fmt = function
+    | V m -> MapCPO.pp fmt m
+    | Top -> Format.fprintf fmt "top"
 end

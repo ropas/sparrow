@@ -21,6 +21,7 @@ struct
   let equal = (=)
   let hash = Hashtbl.hash
   let to_string x = x
+  let pp fmt x = Format.fprintf fmt "%s" x
 end
 
 module ProcSet = BatSet.Make(Proc)
@@ -34,6 +35,7 @@ module Node = struct
   let get_cfgnode (pid,node) = node
   let hash = Hashtbl.hash
   let equal (p1, n1) (p2, n2) = p1 = p2 && IntraCfg.Node.equal n1 n2
+  let pp fmt (p, n) = Format.fprintf fmt "%a-%a" Proc.pp p IntraCfg.Node.pp n
 end
 
 module IntraNodeSet = IntraCfg.NodeSet

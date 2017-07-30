@@ -49,6 +49,8 @@ module Node = struct
     | ENTRY -> "ENTRY"
     | EXIT -> "EXIT"
     | Node i -> string_of_int i
+
+  let pp fmt n = Format.fprintf fmt "%s" (to_string n)
 end
 
 module NodeSet = BatSet.Make(Node)

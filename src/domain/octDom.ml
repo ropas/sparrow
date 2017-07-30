@@ -23,7 +23,10 @@ struct
   let of_size a = Size a
   let to_string = function Loc l -> Loc.to_string l | Size l -> Allocsite.to_string l ^ ":size"
   let to_var : t -> Apron.Var.t
-  = fun l -> to_string l |> Apron.Var.of_string
+    = fun l -> to_string l |> Apron.Var.of_string
+  let pp fmt = function
+    | Loc l -> Format.fprintf fmt "%a" Loc.pp l
+    | Size a -> Format.fprintf fmt "%a" Allocsite.pp a
 end
 module PowOctLoc = 
 struct 
@@ -150,23 +153,24 @@ struct
     let ub = if Scalar.is_infty itv.Interval.sup = 1 then "+oo" else Scalar.to_string itv.Interval.sup in
     "["^lb^", "^ub^"]"
 
-  let to_string : t -> string 
-  = function
+  let to_string = function
     | Bot -> "Oct.Bot"
     | V o ->
       let env = Abstract1.env o in
       let (vars, _) = Environment.vars env in
       Array.fold_left (fun s x ->
-        Array.fold_left (fun s y ->
-          if x = y then 
-            let itv = Abstract1.bound_variable man o x in
-            (if Interval.is_top itv then s
-             else s^(Var.to_string x)^" = "^(interval_to_string itv)^"\n")
-          else
-            let sub = Abstract1.bound_texpr man o (Texpr1.of_expr env (Texpr1.Binop (Texpr1.Sub, Texpr1.Var x, Texpr1.Var y, Texpr1.Int, Texpr1.Near))) in
-            s
-            ^(if Interval.is_top sub then "" else ((Var.to_string x)^" - "^(Var.to_string y)^" = "^(interval_to_string sub)^"\n"))
-        ) s vars) "\n" vars
+          Array.fold_left (fun s y ->
+              if x = y then 
+                let itv = Abstract1.bound_variable man o x in
+                (if Interval.is_top itv then s
+                 else s^(Var.to_string x)^" = "^(interval_to_string itv)^"\n")
+              else
+                let sub = Abstract1.bound_texpr man o (Texpr1.of_expr env (Texpr1.Binop (Texpr1.Sub, Texpr1.Var x, Texpr1.Var y, Texpr1.Int, Texpr1.Near))) in
+                s
+                ^(if Interval.is_top sub then "" else ((Var.to_string x)^" - "^(Var.to_string y)^" = "^(interval_to_string sub)^"\n"))
+            ) s vars) "\n" vars
+
+  let pp fmt x = Format.fprintf fmt "%s" (to_string x)
 
   let bound_variable o v = 
     match o with 

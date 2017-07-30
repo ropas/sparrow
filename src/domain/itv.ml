@@ -33,6 +33,8 @@ struct
     | PInf -> "+oo"
     | MInf -> "-oo"
 
+  let pp fmt x = Format.fprintf fmt "%s" (to_string x)
+
   let le : t -> t -> bool = fun x y ->
     match x, y with
     | MInf, _ -> true
@@ -168,6 +170,10 @@ let of_integer : Integer.t -> Integer.t -> t = fun l u -> V (l, u)
 let to_string : t -> string = function
   | Bot -> "bot"
   | V (l, u) -> "["^(Integer.to_string l)^", "^(Integer.to_string u)^"]"
+
+let pp fmt = function
+  | Bot -> Format.fprintf fmt "bot"
+  | V (l, u) -> Format.fprintf fmt "[%a, %a]" Integer.pp l Integer.pp u
 
 let to_json : t -> Yojson.Safe.json = fun itv ->
   `String (to_string itv)

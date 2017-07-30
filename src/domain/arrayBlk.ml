@@ -112,6 +112,9 @@ struct
     "("^(Itv.to_string arr.offset)^", "^(Itv.to_string arr.size)^", "^(Itv.to_string arr.stride)
     ^", "^(Itv.to_string arr.null_pos)^", "^(PowStruct.to_string arr.structure)^")"
 
+  let pp fmt arr =
+    Format.fprintf fmt "@[<hov 2>( %a, %a, %a, %a, %a )@]" Itv.pp arr.offset
+      Itv.pp arr.size Itv.pp arr.stride Itv.pp arr.null_pos PowStruct.pp arr.structure
 end
 
 include MapDom.MakeLAT (Allocsite) (ArrInfo)

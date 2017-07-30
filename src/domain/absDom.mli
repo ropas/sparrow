@@ -16,6 +16,7 @@ sig
   type t
   val to_string : t -> string
   val compare : t -> t -> int
+  val pp : Format.formatter -> t -> unit
 end
 
 module type HASHABLE_SET = 

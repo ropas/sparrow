@@ -67,14 +67,14 @@ struct
     if BatSet.is_empty x then "bot" else
       let add_string_of_v v acc = link_by_sep "," (A.to_string v) acc in
       "{" ^ BatSet.fold add_string_of_v x "" ^ "}"
-
+  
   let le : t -> t -> bool = fun x y ->
     if x == y then true else BatSet.subset x y
 
   let eq : t -> t -> bool = fun x y ->
     if x == y then true else BatSet.equal x y
 
-  let bot : t = BatSet.empty
+  let bot = BatSet.empty
   let empty = bot
 
   let join : t -> t -> t = fun x y ->
@@ -134,6 +134,14 @@ struct
   let for_all = BatSet.for_all
   let exists = BatSet.exists
   let of_list = BatSet.of_list
+
+  let pp fmt x =
+    let rec pp_elt fmt x =
+      if cardinal x = 1 then Format.fprintf fmt "@[<h>%a@]" A.pp (choose x)
+      else iter (fun elt -> Format.fprintf fmt "@[<h>%a,@]" A.pp elt) x
+    in
+    if is_empty x then Format.fprintf fmt "bot"
+    else Format.fprintf fmt "@[<hov 2>{%a}@]" pp_elt x
 end
 
 module MakeLAT (A:SET) =
@@ -261,4 +269,8 @@ struct
     | _ -> false
 
   let of_list s = V (PowCPO.of_list s)
+
+  let pp fmt = function
+    | V s -> PowCPO.pp fmt s
+    | _ -> Format.fprintf fmt "top"
 end

@@ -157,12 +157,18 @@ struct
   let narrow = meet
 
   let is_empty x = x = bot
-  let to_string
-  = function Bot -> "bot"
-  | V (x, _, d) -> 
+  let to_string = function
+    | Bot -> "bot"
+    | V (x, _, _) -> 
       (G.fold_edges (fun s d str ->
-          str^Node.to_string d ^ " - " ^ Node.to_string s ^"\n") x "")
-(*      ^"{"^(PowOctLoc.fold (fun x s -> s ^ OctLoc.to_string x ^ ",") d "")^"}\n"*)
+           str^Node.to_string d ^ " - " ^ Node.to_string s ^"\n") x "")
+      (*  ^"{"^(PowOctLoc.fold (fun x s -> s ^ OctLoc.to_string x ^ ",") d "")^"}\n"*)
+
+  let pp fmt = function
+    | Bot -> Format.fprintf fmt "bot"
+    | V (x, _, _) ->
+      G.iter_edges (fun s d ->
+          Format.fprintf fmt "@[<hov 2>%a - %a,@]" Node.pp s Node.pp d) x
 end
 
 module Mem =
