@@ -698,7 +698,7 @@ let assign_weight locs feature weights =
  
 let rank : Global.t -> PowLoc.t -> Loc.t list 
 = fun global locset ->
-  let weights = Str.split (Str.regexp "[ \t]+") (!Options.opt_pfs_wv) in
+  let weights = Str.split (Str.regexp "[ \t]+") (!Options.pfs_wv) in
   (*let _ = prerr_endline ("Weight vector : " ^ string_of_list id weights) in*)
   let feature = extract_feature global locset in
   let loclist = PowLoc.elements locset in
@@ -715,8 +715,8 @@ let take_top : int -> Loc.t list -> PowLoc.t
 
 let select : Global.t -> PowLoc.t -> PowLoc.t 
 = fun global locset ->
-  if !Options.opt_pfs >= 100 then locset
-  else if !Options.opt_pfs <= 0 then PowLoc.empty
+  if !Options.pfs >= 100 then locset
+  else if !Options.pfs <= 0 then PowLoc.empty
   else
     rank global locset
-    |> take_top !Options.opt_pfs
+    |> take_top !Options.pfs

@@ -612,7 +612,7 @@ let extract_feature : Global.t -> data
         with _ -> trset)
     | _ -> trset) BatMap.empty 
   in
-  if !Options.opt_debug then 
+  if !Options.debug then 
     (prerr_endline "== features for loop ==";
     BatMap.iter (fun k v -> prerr_endline (k^"\n"^(string_of_feature v))) trset);
   normalize trset
@@ -632,7 +632,7 @@ let print_feature : data -> unit
 
 let get_harmless_loops : Global.t -> loop BatSet.t
 = fun global -> 
-  if !Options.opt_bugfinder < 1 then BatSet.empty
+  if !Options.bugfinder < 1 then BatSet.empty
   else
     let data = extract_feature global in
     let sparrow_bin_path = Unix.getenv "SPARROW_BIN_PATH" in
@@ -652,7 +652,7 @@ let get_harmless_loops : Global.t -> loop BatSet.t
 
 let dissolve : Global.t -> bool
 = fun global ->
-  let target_loops = BatSet.union (get_harmless_loops global) !Options.opt_unsound_loop in
+  let target_loops = BatSet.union (get_harmless_loops global) !Options.unsound_loop in
   let vis = new loopRemoveVisitor target_loops in
   ignore(Cil.visitCilFile vis global.file);
   not (BatSet.is_empty target_loops)

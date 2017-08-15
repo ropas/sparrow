@@ -254,6 +254,6 @@ let optimize_il : t -> t
 let init : Cil.file -> t
 =fun file -> 
   { cfgs = gen_cfgs file; globals = file.Cil.globals ; call_edges = BatMap.empty } 
-  |> opt !Options.opt_optil optimize_il
+  |> opt !Options.optil optimize_il
   |> compute_dom_and_scc
 

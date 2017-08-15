@@ -55,7 +55,7 @@ let remove_unreachable_functions : t -> t
   let reachable = CallGraph.trans_callees InterCfg.global_proc global.callgraph in
   let unreachable = PowProc.diff pids_all reachable |> PowProc.remove InterCfg.global_proc in
   let recursive = PowProc.filter (fun pid -> is_rec pid global) reachable in
-  let global = if !Options.opt_bugfinder >= 2 then global else PowProc.fold remove_function unreachable global in
+  let global = if !Options.bugfinder >= 2 then global else PowProc.fold remove_function unreachable global in
   my_prerr_newline ();
   my_prerr_endline ("#functions all : " ^ string_of_int (PowProc.cardinal pids_all));
   my_prerr_endline ("#recursive : " ^ string_of_int (PowProc.cardinal recursive));

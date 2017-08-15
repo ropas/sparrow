@@ -283,7 +283,7 @@ let prune : update_mode -> Spec.t -> Global.t -> Proc.t -> exp -> Mem.t -> Mem.t
  * Semantic functions for commands *
  * ******************************* *)
 let sparrow_print spec pid exps mem loc =
-  if !Options.opt_verbose < 1 then ()
+  if !Options.verbose < 1 then ()
   else 
     let vs = eval_list spec pid exps mem in
     let vs_str = string_of_list Val.to_string vs in
@@ -293,7 +293,7 @@ let sparrow_print spec pid exps mem loc =
        ^ vs_str)
 
 let sparrow_dump mem loc =
-  if !Options.opt_verbose < 1 then ()
+  if !Options.verbose < 1 then ()
   else 
     prerr_endline
       ("sparrow_dump (" ^ CilHelper.s_location loc ^ ") : \n"
@@ -572,7 +572,7 @@ let sparrow_array_init mode spec node pid exps (mem, global) =
 
 let mem_alloc_libs = ["__ctype_b_loc"; "initscr"; "newwin"; "localtime"; "__errno_location"; "opendir"; "readdir"]
 let scaffolded_functions mode spec node pid (lvo,f,exps) (mem, global) =
-  if !Options.opt_scaffold then 
+  if !Options.scaffold then 
     match f.vname with
     | "fgets" -> model_fgets mode spec pid (lvo, exps) (mem, global)
     | "sprintf" -> model_sprintf mode spec pid (lvo, exps) (mem, global)

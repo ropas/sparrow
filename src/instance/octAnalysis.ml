@@ -66,7 +66,7 @@ let inspect_aexp : PackConf.t -> InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t ->
   Mem.t -> query list -> query list
 =fun packconf node aexp ptrmem mem queries ->
   let pid = InterCfg.Node.get_pid node in
-  (if !Options.opt_oct_debug then 
+  (if !Options.oct_debug then 
   begin
     prerr_endline "query";
     prerr_endline (AlarmExp.to_string aexp)
@@ -219,8 +219,8 @@ let do_analysis : Global.t * ItvDom.Table.t -> Global.t * Table.t * Table.t * Re
 = fun (global, itvinputof) ->
   let global = { global with table = itvinputof } in
   let packconf = StepManager.stepf_switch false "Compute Packing Configuration" 
-      [(!Options.opt_pack_manual, manual_packing); 
-       (!Options.opt_pack_impact, OctImpactAnalysis.packing)] (global, itvinputof)
+      [(!Options.pack_manual, manual_packing); 
+       (!Options.pack_impact, OctImpactAnalysis.packing)] (global, itvinputof)
   in
   PackConf.print_info packconf;
   let spec = { Spec.empty with 
@@ -229,7 +229,7 @@ let do_analysis : Global.t * ItvDom.Table.t -> Global.t * Table.t * Table.t * Re
       Spec.ptrinfo = itvinputof;
       Spec.premem = Mem.top packconf } 
   in
-  cond !Options.opt_marshal_in marshal_in (Analysis.perform spec) global 
-  |> opt !Options.opt_marshal_out marshal_out
+  cond !Options.marshal_in marshal_in (Analysis.perform spec) global 
+  |> opt !Options.marshal_out marshal_out
   |> StepManager.stepf true "Generate Alarm Report" 
     (fun (global,inputof,outputof) -> (global,inputof,outputof,inspect_alarm global spec inputof))

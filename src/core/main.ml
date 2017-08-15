@@ -62,10 +62,10 @@ let octagon_analysis : Global.t * ItvAnalysis.Table.t * ItvAnalysis.Table.t * Re
 
 let extract_feature : Global.t -> Global.t 
 = fun global ->
-  if !Options.opt_extract_loop_feat then 
+  if !Options.extract_loop_feat then 
     let _ = UnsoundLoop.extract_feature global |> UnsoundLoop.print_feature in
     exit 0
-  else if !Options.opt_extract_lib_feat then
+  else if !Options.extract_lib_feat then
     let _ = UnsoundLib.extract_feature global |> UnsoundLib.print_feature in
     exit 0
   else global
@@ -90,11 +90,11 @@ let main () =
     |> Frontend.makeCFGinfo
     |> init_analysis
     |> print_pgm_info
-    |> opt !Options.opt_il print_il
-    |> opt !Options.opt_cfg print_cfg
+    |> opt !Options.il print_il
+    |> opt !Options.cfg print_cfg
     |> extract_feature
     |> StepManager.stepf true "Itv Sparse Analysis" ItvAnalysis.do_analysis
-    |> cond !Options.opt_oct octagon_analysis (fun (_,_,_,alarm) -> alarm)
+    |> cond !Options.oct octagon_analysis (fun (_,_,_,alarm) -> alarm)
     |> Report.print
     |> finish t0
   with exc ->

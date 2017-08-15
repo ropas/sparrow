@@ -103,7 +103,7 @@ let start_logger : unit -> unit =
 
 let start_event : string -> unit =
   fun name ->
-    if !Options.opt_profile then
+    if !Options.profile then
       begin
         let st = Sys.time() in
           if (incr_recursive name) == 1 then
@@ -114,7 +114,7 @@ let start_event : string -> unit =
 
 let finish_event : string -> unit =
   fun name ->
-    if !Options.opt_profile then
+    if !Options.profile then
       begin
         let ft = Sys.time() in
           count_one name;
@@ -156,7 +156,7 @@ let make_file : string -> string =
 
 let report : out_channel -> unit =
   fun c ->
-    if !Options.opt_profile then
+    if !Options.profile then
       begin
         let tot = Sys.time() -. !log_start in
           begin

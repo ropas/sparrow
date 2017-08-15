@@ -121,9 +121,9 @@ struct
     print_iteration ();
     let old_output = Table.find idx outputof in
     (Table.find idx inputof, global)
-    |> opt !Options.opt_debug (prdbg_input idx)
+    |> opt !Options.debug (prdbg_input idx)
     |> Profiler.event "SparseAnalysis.run" (Sem.run Strong spec idx)
-    |> opt !Options.opt_debug (prdbg_output old_output)
+    |> opt !Options.debug (prdbg_output old_output)
     |> Profiler.event "SparseAnalysis.get_unstable" (get_unstable dug idx works old_output)
     &> Profiler.event "SparseAnalysis.propagating" (propagate dug idx (works,inputof,outputof))
     |> (function None -> (works, global, inputof, outputof) | Some x -> x)
@@ -184,7 +184,7 @@ struct
     |> (fun x -> my_prerr_endline ("#iteration in narrowing : " ^ string_of_int !total_iterations); x)
 
   let print_dug (access,global,dug) = 
-    if !Options.opt_dug then 
+    if !Options.dug then 
     begin
       `Assoc 
         [ ("callgraph", CallGraph.to_json global.callgraph); 
@@ -232,11 +232,11 @@ struct
   let initialize : Spec.t -> Global.t -> DUGraph.t -> Access.t -> Table.t 
   = fun spec global dug access ->
     Table.add InterCfg.start_node (Sem.initial spec.Spec.locset) Table.empty
-    |> cond (!Options.opt_pfs < 100) (bind_fi_locs global spec.Spec.premem dug access) id
+    |> cond (!Options.pfs < 100) (bind_fi_locs global spec.Spec.premem dug access) id
 
   let finalize spec global dug access (worklist, global, inputof, outputof) = 
     let inputof = 
-      if !Options.opt_pfs < 100 then bind_unanalyzed_node global spec.Spec.premem dug access inputof
+      if !Options.pfs < 100 then bind_unanalyzed_node global spec.Spec.premem dug access inputof
       else inputof
     in
     (worklist, global, inputof, outputof)
@@ -256,7 +256,7 @@ struct
     (worklist, global, initialize spec global dug access, Table.empty) 
     |> StepManager.stepf false "Fixpoint iteration with widening" (widening spec dug)
     |> finalize spec global dug access
-    |> StepManager.stepf_opt !Options.opt_narrow false "Fixpoint iteration with narrowing" (narrowing spec dug)
+    |> StepManager.stepf_opt !Options.narrow false "Fixpoint iteration with narrowing" (narrowing spec dug)
     |> (fun (_,global,inputof,outputof) -> (global, inputof, outputof))
 end
 

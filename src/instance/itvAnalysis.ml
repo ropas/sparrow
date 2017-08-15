@@ -39,15 +39,15 @@ let print_abslocs_info locs =
  * Alarm Inspection *
  * **************** *)
 let ignore_alarm a arr offset =
-  (!Options.opt_bugfinder >= 1 
+  (!Options.bugfinder >= 1 
     && (Allocsite.is_string_allocsite a
        || arr.ArrInfo.size = Itv.top
        || arr.ArrInfo.size = Itv.one
        || offset = Itv.top && arr.ArrInfo.size = Itv.nat
        || offset = Itv.zero))
-  || (!Options.opt_bugfinder >= 2
+  || (!Options.bugfinder >= 2
       && not (Itv.is_const arr.ArrInfo.size))
-  || (!Options.opt_bugfinder >= 3
+  || (!Options.bugfinder >= 3
        && (offset = Itv.top 
           || Itv.meet arr.ArrInfo.size Itv.zero <> Itv.bot
           || (offset = Itv.top && arr.ArrInfo.offset <> Itv.top)))
@@ -201,7 +201,7 @@ and is_union typ =
     Cil.TPtr (Cil.TComp (c, _), _) -> not c.cstruct
   | _ -> false
 and is_temp_integer v = 
-  !Options.opt_bugfinder >= 2
+  !Options.bugfinder >= 2
   && (try String.sub v.vname 0 3 = "tmp" with _ -> false)
   && Cil.isIntegralType v.vtype
 
@@ -270,7 +270,7 @@ let generate : Global.t * Table.t * target -> query list
     (qs, k+1)
   ) nodes ([],0)
   |> fst
-  |> opt (!Options.opt_bugfinder > 0) (unsound_filter global)
+  |> opt (!Options.bugfinder > 0) (unsound_filter global)
 
 let generate_with_mem : Global.t * Mem.t * target -> query list
 =fun (global,mem,target) ->
@@ -308,9 +308,9 @@ let marshal_out : Global.t * Table.t * Table.t -> Global.t * Table.t * Table.t
 
 let inspect_alarm : Global.t -> Spec.t -> Table.t -> Report.query list
 = fun global _ inputof ->
-  (if !Options.opt_bo then generate (global,inputof,Report.BO) else [])
-  @ (if !Options.opt_nd then generate (global,inputof,Report.ND) else [])
-  @ (if !Options.opt_dz then  generate (global,inputof,Report.DZ) else [])
+  (if !Options.bo then generate (global,inputof,Report.BO) else [])
+  @ (if !Options.nd then generate (global,inputof,Report.ND) else [])
+  @ (if !Options.dz then  generate (global,inputof,Report.DZ) else [])
 
 let get_locset mem = 
   ItvDom.Mem.foldi (fun l v locset -> 
@@ -326,12 +326,12 @@ let do_analysis : Global.t -> Global.t * Table.t * Table.t * Report.query list
   let locset = get_locset global.mem in
   let locset_fs = PartialFlowSensitivity.select global locset in
   let unsound_lib = UnsoundLib.collect global in
-  let unsound_update = (!Options.opt_bugfinder >= 2) in
-  let unsound_bitwise = (!Options.opt_bugfinder >= 1) in
+  let unsound_update = (!Options.bugfinder >= 2) in
+  let unsound_bitwise = (!Options.bugfinder >= 1) in
   let spec = { Spec.empty with 
     Spec.locset; Spec.locset_fs; premem = global.mem; Spec.unsound_lib; 
     Spec.unsound_update; Spec.unsound_bitwise; } in
-  cond !Options.opt_marshal_in marshal_in (Analysis.perform spec) global
-  |> opt !Options.opt_marshal_out marshal_out
+  cond !Options.marshal_in marshal_in (Analysis.perform spec) global
+  |> opt !Options.marshal_out marshal_out
   |> StepManager.stepf true "Generate Alarm Report" (fun (global,inputof,outputof) -> 
       (global,inputof,outputof,inspect_alarm global spec inputof))

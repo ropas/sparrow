@@ -117,9 +117,9 @@ let print : query list -> unit
   let all = partition queries in
   let unproven = partition (get queries UnProven) in
   let bot = partition (get queries BotAlarm) in
-  if not !Options.opt_noalarm then
+  if not !Options.noalarm then
     begin
-      display_alarms "Alarms" (if !Options.opt_show_all_query then all else unproven); 
+      display_alarms "Alarms" (if !Options.show_all_query then all else unproven); 
     end
   else ();
   prerr_endline "";

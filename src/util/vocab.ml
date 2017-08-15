@@ -87,7 +87,7 @@ let set_union_small_big small big = BatSet.fold BatSet.add small big
 (* print progress bar *)
 let prerr_progressbar ?(itv=1) : int -> int -> unit
 = fun n total ->
-  if !Options.opt_verbose < 1 || !Options.opt_nobar then () else
+  if !Options.verbose < 1 || !Options.nobar then () else
   if n mod itv = 0 || n = total then
     let v = n * 60 / total in
     let u = 60-v in
@@ -107,12 +107,12 @@ let rec fix : ('a BatSet.t -> 'a BatSet.t) -> 'a BatSet.t -> 'a BatSet.t
     if BatSet.subset next init then init
     else fix f next
 
-let my_prerr_endline str = if !Options.opt_verbose >= 1 then prerr_endline str
-let my_prerr_newline () = if !Options.opt_verbose >= 1 then prerr_newline ()
-let my_prerr_string str = if !Options.opt_verbose >= 1 then prerr_string str
+let my_prerr_endline str = if !Options.verbose >= 1 then prerr_endline str
+let my_prerr_newline () = if !Options.verbose >= 1 then prerr_newline ()
+let my_prerr_string str = if !Options.verbose >= 1 then prerr_string str
 
 let prerr_memory_usage () =
-  if !Options.opt_verbose <= 1 then ()
+  if !Options.verbose <= 1 then ()
   else
     let stat = Gc.stat () in
     let kB_of_word w = w * Sys.word_size / 1000 / 8 in

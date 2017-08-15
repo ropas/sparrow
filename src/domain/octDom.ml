@@ -60,7 +60,7 @@ struct
         Hashtbl.add loc2pack lv pack;
         pack
       with _ -> 
-        (if !Options.opt_debug then prerr_endline ("get_pack.Not_found : " ^ (OctLoc.to_string lv)));
+        (if !Options.debug then prerr_endline ("get_pack.Not_found : " ^ (OctLoc.to_string lv)));
         Pack.singleton lv
       end
 

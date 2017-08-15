@@ -448,7 +448,7 @@ let itv_of_type : Cil.typ -> t = function
    
 let cast : Cil.typ -> Cil.typ -> t -> t
 = fun from_typ to_typ itv ->
-  if !Options.opt_int_overflow then 
+  if !Options.int_overflow then 
   begin
   match itv with 
     Bot -> Bot

@@ -40,7 +40,7 @@ let pow_loc_of_struct : t -> PowLoc.t = fun str ->
   foldi (fun k _ -> PowLoc.add k) str PowLoc.bot
 
 let extern () = 
-  if !Options.opt_top_location then top
+  if !Options.top_location then top
   else bot
 
 let to_string : t -> string = fun x ->

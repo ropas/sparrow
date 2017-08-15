@@ -434,7 +434,7 @@ let rec run_cmd mode packconf node cmd ptrmem (mem,global) =
 
 let run : update_mode -> Spec.t -> Node.t -> Dom.t * Global.t -> Dom.t * Global.t
 = fun mode spec node (mem, global) ->
-  (if !Options.opt_oct_debug then 
+  (if !Options.oct_debug then 
   begin
     prerr_endline "CMD";
     prerr_endline (Node.to_string node);
@@ -444,7 +444,7 @@ let run : update_mode -> Spec.t -> Node.t -> Dom.t * Global.t -> Dom.t * Global.
   end);
   let ptrmem = ItvDom.Table.find node spec.Spec.ptrinfo in
   let mem = run_cmd mode spec.Spec.locset node (InterCfg.cmdof global.icfg node) ptrmem (mem,global) in
-  (if !Options.opt_oct_debug then 
+  (if !Options.oct_debug then 
    begin
     prerr_endline "== output ==";
     prerr_endline (Mem.to_string mem)
@@ -490,7 +490,7 @@ let check_bo: Proc.t -> OctDom.PackConf.t -> Allocsite.t -> Itv.t -> Cil.exp
   let size = OctLoc.of_size a in
   let pack = PackConf.get_pack packconf size in
   let oct = Mem.find pack mem in
-  (if !Options.opt_oct_debug then 
+  (if !Options.oct_debug then 
   begin
     prerr_endline (Pack.to_string pack);
     prerr_endline (Octagon.to_string oct)

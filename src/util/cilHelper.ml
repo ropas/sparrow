@@ -187,6 +187,6 @@ let byteSizeOf : Cil.typ -> int
 =fun typ -> 
   try (Cil.bitsSizeOf typ) / 8
   with e -> 
-    (if !Options.opt_verbose >= 2 then prerr_endline ("warn: Cil.bitsSizeOf (" ^ s_type typ ^ ")")); 
+    (if !Options.verbose >= 2 then prerr_endline ("warn: Cil.bitsSizeOf (" ^ s_type typ ^ ")")); 
     raise e
 

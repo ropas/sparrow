@@ -237,7 +237,7 @@ let marshal_out : Global.t * ItvDom.Table.t * Table.t * Table.t -> Global.t * It
 let packing : Global.t * ItvAnalysis.Table.t -> PackConf.t
 = fun x ->
   x
-  |> StepManager.stepf_cond !Options.opt_marshal_in true "Oct Impact Analysis" marshal_in do_analysis
-  |> opt !Options.opt_marshal_out marshal_out
+  |> StepManager.stepf_cond !Options.marshal_in true "Oct Impact Analysis" marshal_in do_analysis
+  |> opt !Options.marshal_out marshal_out
   |> inspect_alarm
 

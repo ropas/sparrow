@@ -80,7 +80,7 @@ let is_varargs : string -> Cil.file -> bool
 let inline : Global.t -> bool
 =fun global ->
   let f = global.file in
-  let regexps = List.map (fun str -> Str.regexp (".*" ^ str ^ ".*")) !Options.opt_inline in
+  let regexps = List.map (fun str -> Str.regexp (".*" ^ str ^ ".*")) !Options.inline in
   let to_inline = 
     list_fold (fun global to_inline ->
       match global with
@@ -90,7 +90,7 @@ let inline : Global.t -> bool
     ) f.globals [] in
   let varargs_procs = List.filter (fun fid -> is_varargs fid f) to_inline in
   let recursive_procs = List.filter (fun fid -> Global.is_rec fid global) to_inline in
-  let large_procs = List.filter (fun fid -> try List.length (InterCfg.nodes_of_pid global.icfg fid) > !Options.opt_inline_size with _ -> false) to_inline in
+  let large_procs = List.filter (fun fid -> try List.length (InterCfg.nodes_of_pid global.icfg fid) > !Options.inline_size with _ -> false) to_inline in
   let to_exclude = varargs_procs @ recursive_procs @ large_procs in
   prerr_endline ("To inline : " ^ Vocab.string_of_list Vocab.id to_inline);
   prerr_endline ("Excluded variable-arguments functions : " ^ Vocab.string_of_list Vocab.id varargs_procs);

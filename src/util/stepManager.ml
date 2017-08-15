@@ -26,27 +26,27 @@ let step : bool -> string -> 'a -> ('a -> 'b) -> 'b
 
 let stepf : bool -> string -> ('a -> 'b) -> 'a -> 'b
  = fun s stg fn i ->
-  if !Options.opt_verbose >= 1 then 
+  if !Options.verbose >= 1 then 
      step s stg i fn
   else fn i
 
 let stepf_opt : bool -> bool -> string -> ('a -> 'a) -> 'a -> 'a
  = fun b s stg fn i ->
-	if b && !Options.opt_verbose >= 1 then step s stg i fn
+	if b && !Options.verbose >= 1 then step s stg i fn
   else if b then fn i
 	else i
 
 let stepf_cond : bool -> bool -> string -> ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b
  = fun b s stg fn1 fn2 i ->
-	if b && !Options.opt_verbose >= 1 then step s stg i fn1
-  else if not b && !Options.opt_verbose >= 1 then step s stg i fn2
+	if b && !Options.verbose >= 1 then step s stg i fn1
+  else if not b && !Options.verbose >= 1 then step s stg i fn2
   else if b then fn1 i
 	else fn2 i
 
 let stepf_switch : bool -> string -> (bool * ('a -> 'b)) list -> 'a -> 'b
  = fun s stg fn_list i ->
   let fn = List.find fst fn_list |> snd in
-	if !Options.opt_verbose >= 1 then step s stg i fn
+	if !Options.verbose >= 1 then step s stg i fn
 	else fn i
 
 let stepf_opt_unit : bool -> bool -> string -> ('a -> unit) -> 'a -> unit
