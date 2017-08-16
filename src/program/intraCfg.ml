@@ -836,13 +836,15 @@ let generate_global_proc : Cil.global list -> Cil.fundec -> t
     List.fold_left (fun (node, g) x ->
         match x with
           Cil.GVar (var, init, loc) -> 
-            process_gvar fd (Cil.var var) init loc node g
+          process_gvar fd (Cil.var var) init loc node g
         | Cil.GVarDecl (var, loc) -> process_gvardecl fd (Cil.var var) loc node g
         | Cil.GFun (fundec, loc) -> process_fundecl fd fundec loc node g
         | _ -> (node, g)) (entry, empty fd) globals
   in
-  let (main_dec, main_loc) = match get_main_dec globals with Some (d, l) -> (d, l) 
-               | _ -> raise (Failure "Not Found: main")
+  let (main_dec, main_loc) =
+    match get_main_dec globals with
+    | Some (d, l) -> (d, l)
+    | _ -> prerr_endline ("Error: main not Found"); exit 1
   in
   let call_node = Node.make () in
   let call_cmd = Cmd.Ccall (None, Lval (Var main_dec.svar, NoOffset), [], main_loc) in

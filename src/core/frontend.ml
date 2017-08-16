@@ -26,10 +26,11 @@ let args : string -> unit
     Filename.check_suffix f ".c" then
       files := f :: !files
     else
-      raise (Arg.Bad (f ^ ": Not a preprocessed C"))
+      let _ = prerr_endline ("Error: " ^ f ^ ": Not a preprocessed C") in
+      exit 1
   else
-    raise (Arg.Bad (f ^ ": No such file"))
-
+    let _ = prerr_endline ("Error: " ^ f ^ ": No such file") in
+    exit 1
 
 let parseOneFile : string -> C.file 
 = fun fname ->
