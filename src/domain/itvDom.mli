@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 (** Abstract domains of interval analysis *)
-module Val : sig 
+module Val : sig
   include AbsDom.CPO
 
   val null : t
@@ -39,7 +39,7 @@ module Mem : sig
   val weak_update : BasicDom.PowLoc.t -> Val.t -> t -> t
 end with type A.t = BasicDom.Loc.t and type B.t = Val.t and type PowA.t = BasicDom.PowLoc.t
 
-module Table : MapDom.CPO with 
-  type t = MapDom.MakeCPO(BasicDom.Node)(Mem).t 
-  and type A.t = BasicDom.Node.t 
+module Table : MapDom.CPO with
+  type t = MapDom.MakeCPO(BasicDom.Node)(Mem).t
+  and type A.t = BasicDom.Node.t
   and type B.t = Mem.t

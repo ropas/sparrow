@@ -188,15 +188,15 @@ struct
 
   let weak_add : A.t -> B.t -> t -> t = fun k v x ->
     if B.eq v B.bot then x else
-      BatMap.modify_def v k (fun orig_v -> 
-        if B.le v orig_v then orig_v 
-        else if B.le orig_v v then v 
+      BatMap.modify_def v k (fun orig_v ->
+        if B.le v orig_v then orig_v
+        else if B.le orig_v v then v
         else B.join orig_v v) x
 
   let widen_add : A.t -> B.t -> t -> t = fun k v x ->
     if B.eq v B.bot then x else
       BatMap.modify_def v k (fun orig_v ->
-        if B.le v orig_v then orig_v 
+        if B.le v orig_v then orig_v
         else B.widen orig_v v) x
 
   let remove : A.t -> t -> t = BatMap.remove
@@ -208,7 +208,7 @@ struct
       [\[x |-> B.bot\]] and [\[ \]] are the same map,  it is natural
       that [map f \[x |-> B.bot\]] and [map f \[ \]] return the same
       value.  *)
-  let map = BatMap.map 
+  let map = BatMap.map
 
   let mapi = BatMap.mapi
 
@@ -242,7 +242,7 @@ struct
         else loop kv1 (BatEnum.get e_new) unstb
       | Some (k1, v1), Some (k2, v2) ->
         let cmp = A.compare k1 k2 in
-        if cmp < 0 then 
+        if cmp < 0 then
           loop (BatEnum.get e_old) kv2 unstb
         else if cmp > 0 then
           if v2 <> B.bot && PowA.mem k2 candidate then
@@ -250,9 +250,9 @@ struct
           else
             loop kv1 (BatEnum.get e_new) unstb
         else
-          if is_unstb v1 v2 && PowA.mem k2 candidate then 
-            loop (BatEnum.get e_old) (BatEnum.get e_new) ((k1,v1,v2)::unstb)  
-          else 
+          if is_unstb v1 v2 && PowA.mem k2 candidate then
+            loop (BatEnum.get e_old) (BatEnum.get e_new) ((k1,v1,v2)::unstb)
+          else
             loop (BatEnum.get e_old) (BatEnum.get e_new) unstb
     in
     let init_old = BatEnum.get e_old in
@@ -306,7 +306,7 @@ struct
   module PowA = PowDom.MakeCPO(A)
 
   type t = V of MapCPO.t | Top [@@deriving compare]
-  
+
   let bot = V MapCPO.bot
   let top = Top
 
@@ -322,7 +322,7 @@ struct
     | V m -> MapCPO.choose m
     | Top -> raise (Failure "Error: choose")
 
-  let le x y = 
+  let le x y =
     match x, y with
     | V x, V y -> MapCPO.le x y
     | _, Top -> true
@@ -340,7 +340,7 @@ struct
     | Top -> raise (Failure "Error: filter")
 
   let join x y =
-    match x, y with 
+    match x, y with
     | V x, V y -> V (MapCPO.join x y)
     | _, Top | Top, _ -> top
 
@@ -369,7 +369,7 @@ struct
     | Top -> false | V m -> MapCPO.is_empty m
 
   let find k = function
-    | V m -> MapCPO.find k m 
+    | V m -> MapCPO.find k m
     | Top -> raise (Failure "Error: find")
 
   let add k v = function
@@ -386,7 +386,7 @@ struct
 
   let remove k = function
     | V m -> V (MapCPO.remove k m)
-    | Top -> top 
+    | Top -> top
 
   let iter f = function
     | V m -> MapCPO.iter f m
@@ -402,7 +402,7 @@ struct
     | V m -> V (MapCPO.map f m)
     | Top -> Top
 
-  let mapi f = function 
+  let mapi f = function
     | V m -> V (MapCPO.mapi f m)
     | Top -> Top
 
@@ -412,7 +412,7 @@ struct
       that [fold f \[x |-> B.bot\] acc] and [fold f \[ \] acc] return
       the same value.  *)
   let fold f x a =
-    match x with 
+    match x with
     | V m -> MapCPO.fold f m a
     | Top -> a
 
@@ -425,7 +425,7 @@ struct
       Returns a list of triples, (key, old value, new value).
   *)
   let unstables old_m new_m is_unstb candidate =
-    match old_m, new_m with 
+    match old_m, new_m with
     | V old_m, V new_m -> MapCPO.unstables old_m new_m is_unstb candidate
     | _, _ -> raise (Failure "unstable")
 
@@ -439,7 +439,7 @@ struct
 
   let keys m = foldi (fun k _ -> PowA.add k) m PowA.empty
 
-  let mem k = function 
+  let mem k = function
     | V m -> MapCPO.mem k m
     | Top -> raise (Failure "Error: mem")
 
@@ -463,7 +463,7 @@ struct
     let meet_a_map k v = B.meet v (find k big_x) in
     if le_small_big small_y big_x then small_y else
       mapi meet_a_map small_y
-  
+
   let pp fmt = function
     | V m -> MapCPO.pp fmt m
     | Top -> Format.fprintf fmt "top"

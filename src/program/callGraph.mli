@@ -27,4 +27,4 @@ val compute_trans_calls : t -> t
 
 (** {2 Print } *)
 
-val to_json : t -> Yojson.Safe.json 
+val to_json : t -> Yojson.Safe.json

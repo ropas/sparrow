@@ -8,7 +8,7 @@
 (* See the LICENSE file for details.                                   *)
 (*                                                                     *)
 (***********************************************************************)
-module type S = 
+module type S =
 sig
   module Dom : InstrumentedMem.S
 

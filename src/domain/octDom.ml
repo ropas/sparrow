@@ -15,8 +15,8 @@ open Global
 open Vocab
 open Apron
 
-module OctLoc = 
-struct 
+module OctLoc =
+struct
   type t = Loc of Loc.t | Size of Allocsite.t [@@deriving compare]
   let dummy = Loc Loc.dummy
   let of_loc l = Loc l
@@ -28,55 +28,55 @@ struct
     | Loc l -> Format.fprintf fmt "%a" Loc.pp l
     | Size a -> Format.fprintf fmt "%a" Allocsite.pp a
 end
-module PowOctLoc = 
-struct 
+module PowOctLoc =
+struct
   include PowDom.MakeCPO(OctLoc)
   let empty = bot
   let of_locs : PowLoc.t -> t
   = fun locs -> PowLoc.fold (fun x -> add (OctLoc.of_loc x)) locs empty
   let of_sizes : Allocsite.t BatSet.t -> t
   = fun locs -> BatSet.fold (fun x -> add (OctLoc.of_size x)) locs empty
-  let to_string x = 
+  let to_string x =
     if is_empty x then "{}"
     else to_string x
 end
 
 module Pack = PowOctLoc
 
-module PackConf = 
+module PackConf =
 struct
   include PowDom.MakeCPO(Pack)
-  
+
   (* cache *)
   let loc2pack : (OctLoc.t, Pack.t) Hashtbl.t = Hashtbl.create 1000
 
-  let get_pack : t -> OctLoc.t -> Pack.t 
+  let get_pack : t -> OctLoc.t -> Pack.t
   = fun packconf lv ->
-    try Hashtbl.find loc2pack lv 
+    try Hashtbl.find loc2pack lv
     with Not_found ->
       begin
       try
         let pack = choose (filter (Pack.mem lv) packconf) in
         Hashtbl.add loc2pack lv pack;
         pack
-      with _ -> 
+      with _ ->
         (if !Options.debug then prerr_endline ("get_pack.Not_found : " ^ (OctLoc.to_string lv)));
         Pack.singleton lv
       end
 
-  let get_all_octlocs : ItvDom.Table.t -> Pack.t 
+  let get_all_octlocs : ItvDom.Table.t -> Pack.t
   = fun itvinputof ->
     ItvAnalysis.Table.fold (fun _ mem pack ->
-      ItvDom.Mem.foldi (fun x v pack -> 
+      ItvDom.Mem.foldi (fun x v pack ->
         if (ItvDom.Val.pow_proc_of_val v <> PowProc.bot)
         then pack
-        else 
+        else
           let plocs = ArrayBlk.allocsites_of_array (ItvDom.Val.array_of_val v) in
           pack
           |> opt (ItvDom.Val.itv_of_val v <> Itv.bot) (Pack.add (OctLoc.of_loc x))
           |> BatSet.fold (fun x -> Pack.add (OctLoc.of_size x)) plocs) mem pack
     ) itvinputof Pack.bot
-   
+
   let fullpack itvinputof = get_all_octlocs itvinputof |> singleton
 
   let make : ItvDom.Table.t -> t -> t
@@ -86,18 +86,18 @@ struct
     let non_relational = PowOctLoc.diff all_octlocs relational in
     PowOctLoc.fold (fun x -> add (PowOctLoc.singleton x)) non_relational packs
 
-  let print packconf = 
+  let print packconf =
     BatSet.iter (fun s ->
         prerr_string "{";
         Pack.iter (fun x -> prerr_string ((OctLoc.to_string x)^", ")) s;
         prerr_string "}, ") packconf
 
-  let print_info packconf = 
+  let print_info packconf =
     let total = cardinal packconf in
-    let (non_singleton, rel_var) = 
-      fold (fun x (pack, var) -> 
+    let (non_singleton, rel_var) =
+      fold (fun x (pack, var) ->
         if Pack.cardinal x > 1 then (pack + 1, var + (Pack.cardinal x))
-        else (pack, var)) packconf (0,0) 
+        else (pack, var)) packconf (0,0)
     in
     prerr_endline "=== Packing Configuration ===";
     prerr_endline ("=== # total packs         : "^(string_of_int total));
@@ -116,9 +116,9 @@ end
 
 type packconf = PackConf.t
 
-module Octagon = 
-struct 
-  type t = V of oct | Bot 
+module Octagon =
+struct
+  type t = V of oct | Bot
   and oct = Oct.t Abstract1.t
 
   let man = Oct.manager_alloc ()
@@ -132,23 +132,23 @@ struct
 
   let is_bot x = function Bot -> true | _ -> false
 
-  let le : t -> t -> bool 
+  let le : t -> t -> bool
   = fun x y ->
-    match (x, y) with 
+    match (x, y) with
     | (Bot, _) -> true
     | (V x, V y) -> Abstract1.is_leq man x y
     | (_, _) -> false
 
-  let eq : t -> t -> bool 
-  = fun x y -> 
+  let eq : t -> t -> bool
+  = fun x y ->
     match (x, y) with
     | (Bot, Bot) -> true
     | (V x, V y) -> Abstract1.is_eq man x y
     | (_, _) -> false
-  
-  let is_bot = function Bot -> true | V o -> Abstract1.is_bottom man o 
 
-  let interval_to_string itv = 
+  let is_bot = function Bot -> true | V o -> Abstract1.is_bottom man o
+
+  let interval_to_string itv =
     let lb = if Scalar.is_infty itv.Interval.inf = -1 then "-oo" else Scalar.to_string itv.Interval.inf in
     let ub = if Scalar.is_infty itv.Interval.sup = 1 then "+oo" else Scalar.to_string itv.Interval.sup in
     "["^lb^", "^ub^"]"
@@ -160,7 +160,7 @@ struct
       let (vars, _) = Environment.vars env in
       Array.fold_left (fun s x ->
           Array.fold_left (fun s y ->
-              if x = y then 
+              if x = y then
                 let itv = Abstract1.bound_variable man o x in
                 (if Interval.is_top itv then s
                  else s^(Var.to_string x)^" = "^(interval_to_string itv)^"\n")
@@ -172,17 +172,17 @@ struct
 
   let pp fmt x = Format.fprintf fmt "%s" (to_string x)
 
-  let bound_variable o v = 
-    match o with 
+  let bound_variable o v =
+    match o with
       Bot -> Apron.Interval.bottom
     | V o -> Abstract1.bound_variable man o v
 
   let interval_to_itv i =
-    let f scalar = 
-      match Scalar.is_infty scalar with 
+    let f scalar =
+      match Scalar.is_infty scalar with
         -1 -> Itv.Integer.minf
       | 1 -> Itv.Integer.pinf
-      | _ -> 
+      | _ ->
       begin
         match scalar with
           Scalar.Float f -> Itv.Integer.of_int (int_of_float f)
@@ -191,24 +191,24 @@ struct
       end
     in
     let (lb, ub) = (f i.Interval.inf, f i.Interval.sup) in
-    if not (Itv.Integer.le lb ub) then Itv.bot 
+    if not (Itv.Integer.le lb ub) then Itv.bot
     else Itv.of_integer lb ub
 
   let itv_of_var : OctLoc.t -> t -> Itv.t
   = fun x o ->
-    match o with 
-    | V o -> 
+    match o with
+    | V o ->
       Abstract1.bound_variable man o (Apron.Var.of_string (OctLoc.to_string x))
       |> interval_to_itv
     | _ -> Itv.bot
 
-  let bound_texpr o e = 
-    match o with 
+  let bound_texpr o e =
+    match o with
       Bot -> Apron.Interval.bottom
     | V o -> Abstract1.bound_texpr man o (Texpr1.of_expr (Abstract1.env o) e)
 
   let itv_of_expr : Texpr1.expr -> t -> Itv.t
-  = fun exp oct -> 
+  = fun exp oct ->
     interval_to_itv (bound_texpr oct exp)
 
   let to_json x = Yojson.Safe.(`String "") (* TODO *)
@@ -217,7 +217,7 @@ struct
   = fun lv texpr oct ->
     match oct with
       V o ->
-        let var = OctLoc.to_var lv in 
+        let var = OctLoc.to_var lv in
         let env = Abstract1.env o in
         let texpr = Texpr1.of_expr env texpr in
         let o = Abstract1.assign_texpr man o var texpr None in
@@ -227,13 +227,13 @@ struct
 
   let forget : OctLoc.t -> t -> t
   = fun lv oct ->
-    match oct with 
+    match oct with
       V o -> V (Abstract1.forget_array man o [| OctLoc.to_var lv |] false)
-    | Bot -> bot 
+    | Bot -> bot
 
   let prune : OctLoc.t -> Texpr1.expr -> Tcons1.typ -> t -> t
   = fun lv texpr typ oct ->
-    match oct with 
+    match oct with
       V o ->
         let env = Abstract1.env o in
         let tcons = Tcons1.make (Texpr1.of_expr env texpr) typ in
@@ -241,15 +241,15 @@ struct
         Tcons1.array_set earray 0 tcons;
         V (Abstract1.meet_tcons_array man o earray)
     | _ -> oct
-    
-  let join : t -> t -> t 
-  = fun x y -> 
+
+  let join : t -> t -> t
+  = fun x y ->
     match (x, y) with
     | x, Bot
     | Bot, x -> x
-    | V x, V y -> 
+    | V x, V y ->
       V (Abstract1.join man x y)
-      
+
   let meet : t -> t -> t
   = fun x y ->
     match (x, y) with
@@ -258,12 +258,12 @@ struct
     | V x, V y ->
       V (Abstract1.meet man x y)
 
-  let widen : t -> t -> t 
+  let widen : t -> t -> t
   = fun x y ->
     match (x, y) with
     | x, Bot
     | Bot, x -> x
-    | V x, V y -> 
+    | V x, V y ->
       V (Abstract1.widening man x y)
 
   let narrow : t -> t -> t
@@ -271,18 +271,18 @@ struct
 end
 
 
-module Mem = 
-struct 
+module Mem =
+struct
   include InstrumentedMem.Make (MapDom.MakeCPO (Pack) (Octagon))
 
-  let top packconf = 
+  let top packconf =
     PackConf.fold (fun pack -> add pack (Octagon.top pack)) packconf bot
   let init = top
 
   let to_string : t -> string = fun x ->
     if is_empty x then "Bot" else
       foldi (fun pack v s ->
-        if Pack.cardinal pack > 2 then 
+        if Pack.cardinal pack > 2 then
           s^(Pack.to_string pack)^" -> "^(Octagon.to_string v)
         else s) x ""
 end

@@ -19,7 +19,7 @@ let threshold = BatSet.of_list [0;1;16;64]
  * Integer = Z + {-oo, +oo} *
  * ************************ *)
 
-module Integer = 
+module Integer =
 struct
   type t = Int of int | MInf | PInf [@@deriving compare]
 
@@ -61,15 +61,15 @@ struct
     if le y x then
       if eq y x then y else
         let filtered = BatSet.filter (fun k -> le (Int k) y) threshold in
-        if BatSet.is_empty filtered 
+        if BatSet.is_empty filtered
         then MInf else Int (BatSet.max_elt filtered)
     else x
-    
+
   let upper_widen : t -> t -> t = fun x y ->
     if le x y then
       if eq x y then y else
         let filtered = BatSet.filter (fun k -> le y (Int k)) threshold in
-        if BatSet.is_empty filtered 
+        if BatSet.is_empty filtered
       then PInf else Int (BatSet.min_elt filtered)
     else x
 
@@ -80,8 +80,8 @@ struct
     else invalid_arg ("itv.ml: Integer.lower_narrow (x, y). y < x : "^(to_string y)^" < "^(to_string x))
 
   let upper_narrow : t -> t -> t = fun x y ->
-    if le y x then 
-      if eq x PInf || BatSet.exists (fun k -> x = Int k) threshold then y 
+    if le y x then
+      if eq x PInf || BatSet.exists (fun k -> x = Int k) threshold then y
       else x
     else invalid_arg "itv.ml: Integer.upper_narrow (x, y). x < y"
 
@@ -187,7 +187,7 @@ let is_bot : t -> bool = function
     [Bot].*)
 let normalize x = if is_bot x then Bot else x
 
-let absolute = function 
+let absolute = function
   | Bot -> Bot
   | V (l, u) ->
     if Integer.le Integer.zero l then V (l, u)
@@ -424,18 +424,18 @@ let unknown_binary (x:t) (y:t) : t =
   if is_bot x || is_bot y then bot
   else top
 
-let unknown_unary (x:t) : t = 
-  if is_bot x then Bot 
-  else top                    
+let unknown_unary (x:t) : t =
+  if is_bot x then Bot
+  else top
 
-let l_shift (x:t) (y:t) : t = 
+let l_shift (x:t) (y:t) : t =
   match x, y with
     V (Int l1, Int u1), V (Int l2, Int u2) when l1 = u1 && l2 = u2 ->
       let x = l1 lsl l2 in
       V (Int x, Int x)
   | _ -> unknown_binary x y
 
-let itv_of_type : Cil.typ -> t = function 
+let itv_of_type : Cil.typ -> t = function
   | Cil.TInt (Cil.IUChar, _) -> of_ints 0 255
   | Cil.TInt (Cil.IUShort, _) -> of_ints 0 65535
   | Cil.TInt (Cil.IUInt, _) | Cil.TInt (Cil.ILong, _)
@@ -445,36 +445,36 @@ let itv_of_type : Cil.typ -> t = function
   | Cil.TInt (Cil.IInt, _) | Cil.TInt (Cil.IULong, _)
   | Cil.TInt (Cil.ILongLong, _) -> of_ints (-2147483648) 2147483648
   | _ -> top
-   
+
 let cast : Cil.typ -> Cil.typ -> t -> t
 = fun from_typ to_typ itv ->
-  if !Options.int_overflow then 
+  if !Options.int_overflow then
   begin
-  match itv with 
+  match itv with
     Bot -> Bot
-  | _ -> 
-    let (from_size, to_size) = 
-      ((try CilHelper.byteSizeOf from_typ |> of_int with _ -> top), 
-       (try CilHelper.byteSizeOf to_typ |> of_int with _ -> top)) 
+  | _ ->
+    let (from_size, to_size) =
+      ((try CilHelper.byteSizeOf from_typ |> of_int with _ -> top),
+       (try CilHelper.byteSizeOf to_typ |> of_int with _ -> top))
     in
-    if CilHelper.is_unsigned from_typ && CilHelper.is_unsigned to_typ then 
+    if CilHelper.is_unsigned from_typ && CilHelper.is_unsigned to_typ then
       if from_size <= to_size then itv
       else if Integer.le (upper_integer itv) (upper_integer (itv_of_type to_typ)) then itv
       else top (* possibly overflow *)
-    else if not (CilHelper.is_unsigned from_typ) && CilHelper.is_unsigned to_typ then 
+    else if not (CilHelper.is_unsigned from_typ) && CilHelper.is_unsigned to_typ then
       if from_size <= to_size then absolute itv
       else if Integer.le (upper_integer itv) (upper_integer (itv_of_type to_typ)) then itv
       else top (* possibly overflow *)
-    else if CilHelper.is_unsigned from_typ && not (CilHelper.is_unsigned to_typ) then 
+    else if CilHelper.is_unsigned from_typ && not (CilHelper.is_unsigned to_typ) then
       if from_size < to_size then itv
       else if Integer.le (upper_integer itv) (upper_integer (itv_of_type to_typ)) then itv
       else top (* possibly overflow *)
-    else 
+    else
       if from_size <= to_size then itv
       else if Integer.le (upper_integer itv) (upper_integer (itv_of_type to_typ)) then itv
       else top (* possibly overflow *)
-  end 
-  else 
+  end
+  else
   begin
     if CilHelper.is_unsigned to_typ then absolute itv
     else itv

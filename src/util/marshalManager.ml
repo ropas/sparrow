@@ -15,7 +15,7 @@ let output : string -> 'a -> unit
   close_out chan
 
 let input : string -> 'a
-= fun name -> 
+= fun name ->
   let chan = open_in (!Options.marshal_dir ^ "/" ^ name) in
   let data = Marshal.from_channel chan in
   close_in chan;

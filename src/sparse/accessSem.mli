@@ -8,7 +8,7 @@
 (* See the LICENSE file for details.                                   *)
 (*                                                                     *)
 (***********************************************************************)
-module type S = 
+module type S =
 sig
   include AbsSem.S
   module Access : Access.S with type t = Dom.Access.t
@@ -18,9 +18,9 @@ sig
     -> Access.info
 end
 
-module Make (Sem : AbsSem.S) : S 
+module Make (Sem : AbsSem.S) : S
   with type Dom.t = Sem.Dom.t
-  and type Dom.A.t = Sem.Dom.A.t 
+  and type Dom.A.t = Sem.Dom.A.t
   and type Dom.PowA.t = Sem.Dom.PowA.t
   and type Dom.Access.t = Sem.Dom.Access.t
   and type Dom.Access.Info.t = Sem.Dom.Access.Info.t

@@ -10,7 +10,7 @@
 (***********************************************************************)
 (** Pre-analysis to compute accessibility *)
 
-module type S = 
+module type S =
 sig
   module Dom : InstrumentedMem.S
   module Loc : AbsDom.SET
@@ -20,8 +20,8 @@ sig
   val perform : Global.t -> PowLoc.t -> (BasicDom.Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Access.t
 end
 
-module Make(AccessSem : AccessSem.S) : S 
-  with type Dom.t = AccessSem.Dom.t 
+module Make(AccessSem : AccessSem.S) : S
+  with type Dom.t = AccessSem.Dom.t
   and type Loc.t = AccessSem.Dom.A.t
   and type PowLoc.t = AccessSem.Dom.PowA.t
   and type Access.t = AccessSem.Dom.Access.t

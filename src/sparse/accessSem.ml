@@ -12,7 +12,7 @@ open AbsSem
 open BasicDom
 open ItvDom
 
-module type S = 
+module type S =
 sig
   include AbsSem.S
   module Access : Access.S with type t = Dom.Access.t
@@ -27,7 +27,7 @@ struct
   include Sem
   module Access = Sem.Dom.Access
   let accessof ?(locset=Dom.PowA.empty): Global.t -> Node.t -> (Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Dom.t -> Dom.Access.info
-  = fun global node f mem -> 
+  = fun global node f mem ->
     Dom.init_access ();
     let _ = f node (mem,global) in
     Dom.return_access ()

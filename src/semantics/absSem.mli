@@ -14,7 +14,7 @@ type update_mode =
   | Weak
   | Strong
 
-module type S = 
+module type S =
 sig
   module Dom : InstrumentedMem.S
   module Spec : Spec.S with type Dom.t = Dom.t and type Dom.A.t = Dom.A.t
@@ -22,4 +22,4 @@ sig
   val run : update_mode -> Spec.t -> BasicDom.Node.t -> Dom.t * Global.t
     -> Dom.t * Global.t
   val initial : Dom.PowA.t -> Dom.t
-end 
+end

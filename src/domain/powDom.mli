@@ -10,8 +10,8 @@
 (***********************************************************************)
 (** Powset domain *)
 
-module type CPO = 
-sig 
+module type CPO =
+sig
   include AbsDom.CPO
   type elt
 
@@ -22,7 +22,7 @@ sig
   val map : (elt -> elt) -> t -> t
   val iter : (elt -> unit) -> t -> unit
 
-  val singleton : elt -> t 
+  val singleton : elt -> t
   val subset : t -> t -> bool
   val cardinal : t -> int
 
@@ -32,7 +32,7 @@ sig
   val diff : t -> t -> t
 
   val choose : t -> elt
-  
+
   val remove : elt -> t -> t
 
   val is_empty : t -> bool
@@ -40,7 +40,7 @@ sig
   val union : t -> t -> t
   val union_small_big : t -> t -> t
   val inter : t -> t -> t
-  val for_all : (elt -> bool) -> t -> bool 
+  val for_all : (elt -> bool) -> t -> bool
   val exists : (elt -> bool) -> t -> bool
   val of_list : elt list -> t
   val elements : t -> elt list

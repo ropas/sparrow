@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 (** Accessibility information *)
-module type S = 
+module type S =
 sig
   module Loc : AbsDom.SET
   module PowLoc : PowDom.CPO with type elt = Loc.t

@@ -101,7 +101,7 @@ let prerr_progressbar ?(itv=1) : int -> int -> unit
   else ()
 
 (* fixpoint operator for set *)
-let rec fix : ('a BatSet.t -> 'a BatSet.t) -> 'a BatSet.t -> 'a BatSet.t 
+let rec fix : ('a BatSet.t -> 'a BatSet.t) -> 'a BatSet.t -> 'a BatSet.t
 = fun f init ->
   let next = f init in
     if BatSet.subset next init then init

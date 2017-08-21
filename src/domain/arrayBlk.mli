@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 (** Array domain *)
-module ArrInfo : 
+module ArrInfo :
 sig
   type t = {
     offset    : Itv.t;
@@ -36,7 +36,7 @@ val plus_offset : t -> Itv.t -> t
 val minus_offset : t -> Itv.t -> t
 val set_null_pos : t -> Itv.t -> t
 val plus_null_pos : t -> Itv.t -> t
-val cast_array : Cil.typ -> t -> t 
-val allocsites_of_array : t -> BasicDom.Allocsite.t BatSet.t 
+val cast_array : Cil.typ -> t -> t
+val allocsites_of_array : t -> BasicDom.Allocsite.t BatSet.t
 val pow_loc_of_array : t -> BasicDom.PowLoc.t
-val append_field : t -> Cil.fieldinfo -> BasicDom.PowLoc.t 
+val append_field : t -> Cil.fieldinfo -> BasicDom.PowLoc.t

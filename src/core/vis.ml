@@ -17,21 +17,21 @@ let usage = ""
 
 let file = ref ""
 
-let args f = 
-  if Sys.file_exists f then 
+let args f =
+  if Sys.file_exists f then
     file := f
-  else 
+  else
     raise (Arg.Bad (f^": No such file"))
 
 let dump_nodes : out_channel -> (string * Json.json) list -> unit
 = fun chan l ->
   List.iter (fun (node, attr) ->
-      match attr with 
+      match attr with
         `List [cmd; `Bool loophead; `Bool callnode] ->
           let cmd = Json.to_string cmd in
           let cmd = if String.length cmd > 2 then String.sub cmd 1 ((String.length cmd) -2) else "" in
           let str = (node^"[label=\""^node^": "^cmd^"\""^
-             (if loophead then " style=filled color=lightblue" else "")^ 
+             (if loophead then " style=filled color=lightblue" else "")^
              (if callnode then " style=filled color=grey" else "")^"]\n")
           in
           output_string chan str
@@ -39,16 +39,16 @@ let dump_nodes : out_channel -> (string * Json.json) list -> unit
   fprintf chan "}\n"
 
 let dump_edges : out_channel -> Json.json list -> unit
-= fun chan l -> 
+= fun chan l ->
   List.iter (fun edge ->
-      match edge with 
+      match edge with
         `List [`String v1; `String v2] ->
           fprintf chan "%s -> %s\n" v1 v2
       | _ -> raise (Failure "error")
     ) l
 
 
-let dump_dug : out_channel -> string -> (string * Json.json) list 
+let dump_dug : out_channel -> string -> (string * Json.json) list
   -> (string * string, string) BatMap.t -> unit
 = fun chan pid l dug ->
   List.iter (fun (src, _) ->
@@ -62,15 +62,15 @@ let dump_dug : out_channel -> string -> (string * Json.json) list
 
 let dump_cfgs : Json.json -> unit
 = fun json ->
-  match json with 
-    `Assoc l -> 
+  match json with
+    `Assoc l ->
       List.iter (fun (pid, cfg) ->
         let dot = pid^".dot" in
         let chan = open_out dot in
         fprintf chan "digraph %s {\n" pid;
         fprintf chan "{\n";
         fprintf chan "node [shape=box]\n";
-        (match cfg with 
+        (match cfg with
          `Assoc [(_, `Assoc nodes); (_, `List edges)] ->
          dump_nodes chan nodes;
          dump_edges chan edges
@@ -85,15 +85,15 @@ let dump_cfgs : Json.json -> unit
 
 let dump_cfgs_with_dug : Json.json -> (string * string, string) BatMap.t -> unit
 = fun json dug ->
-  match json with 
-    `Assoc l -> 
+  match json with
+    `Assoc l ->
       List.iter (fun (pid, cfg) ->
         let dot = pid^".dot" in
         let chan = open_out dot in
         fprintf chan "digraph %s {\n" pid;
         fprintf chan "{\n";
         fprintf chan "node [shape=box]\n";
-        (match cfg with 
+        (match cfg with
          `Assoc [(_, `Assoc nodes); (_, `List edges)] ->
          dump_nodes chan nodes;
          dump_edges chan edges;
@@ -115,17 +115,17 @@ let dump_callgraph : Json.json -> unit
   fprintf chan "digraph %s {\n" "callgraph";
   fprintf chan "{\n";
   fprintf chan "node [shape=box]\n";
-  (match json with 
-    `Assoc l -> 
+  (match json with
+    `Assoc l ->
       (match (List.assoc "nodes" l, List.assoc "edges" l) with
-        (`List nodes, `List edges) -> 
+        (`List nodes, `List edges) ->
           List.iter (fun node ->
-            match node with 
+            match node with
               `String s -> fprintf chan ("%s[label=\"%s\" URL=\"%s\"]\n") s s (s^".svg")
             | _ -> raise (Failure "error")) nodes;
           fprintf chan "}\n";
           List.iter (fun edge ->
-            match edge with 
+            match edge with
               `List [`String v1; `String v2] -> fprintf chan "%s -> %s\n" v1 v2
             | _ -> raise (Failure "error")) edges;
           fprintf chan "}\n"
@@ -151,26 +151,26 @@ let create_index : unit -> unit
 
 let gen_dug : Json.json -> (string * string, string) BatMap.t
 = fun json ->
-  match json with 
-    `Assoc dug -> 
+  match json with
+    `Assoc dug ->
       let edges = List.assoc "edges" dug in
-      (match edges with 
+      (match edges with
       `List l ->
-      List.fold_left (fun m e -> 
-          match e with 
+      List.fold_left (fun m e ->
+          match e with
             `List [`String src; `String dst; `String label] ->
               BatMap.add (src,dst) label m
           | _ -> m) BatMap.empty l
       | _ -> raise (Failure "error"))
    | _ -> raise (Failure "error")
-  
-let dump : Json.json -> unit 
+
+let dump : Json.json -> unit
 = fun json ->
   let dir = !file^".vis" in
   (try Unix.mkdir dir 0o755 with _ -> ());
   Unix.chdir dir;
   create_index ();
-  match json with 
+  match json with
     `Assoc global ->
       let dug = try gen_dug (List.assoc "dugraph" global) with _ -> BatMap.empty in
       dump_callgraph (List.assoc "callgraph" global);
@@ -179,7 +179,7 @@ let dump : Json.json -> unit
 
 
 
-let main () = 
+let main () =
   Arg.parse opts args usage;
   let json = Json.from_file !file in
 (*  Json.pretty_to_channel stdout json;*)

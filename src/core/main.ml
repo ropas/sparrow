@@ -13,7 +13,7 @@ open Cil
 open Global
 open Vocab
 
-let transform : Global.t -> Global.t 
+let transform : Global.t -> Global.t
 = fun global ->
   let loop_transformed = UnsoundLoop.dissolve global in
   let inlined = Frontend.inline global in
@@ -22,54 +22,54 @@ let transform : Global.t -> Global.t
     |> StepManager.stepf true "Translation to graphs (after inline)" Global.init
     |> StepManager.stepf true "Pre-analysis (after inline)" PreAnalysis.perform
   else global (* nothing changed *)
- 
+
 let init_analysis : Cil.file -> Global.t
 = fun file ->
   file
-  |> StepManager.stepf true "Translation to graphs" Global.init 
+  |> StepManager.stepf true "Translation to graphs" Global.init
   |> StepManager.stepf true "Pre-analysis" PreAnalysis.perform
   |> transform
 
-let print_pgm_info : Global.t -> Global.t 
+let print_pgm_info : Global.t -> Global.t
 = fun global ->
   let pids = InterCfg.pidsof global.icfg in
   let nodes = InterCfg.nodesof global.icfg in
   prerr_endline ("#Procs : " ^ string_of_int (List.length pids));
   prerr_endline ("#Nodes : " ^ string_of_int (List.length nodes));
   global
- 
+
 let print_il : Global.t -> Global.t
 = fun global ->
-  Cil.dumpFile !Cil.printerForMaincil stdout "" global.file; 
+  Cil.dumpFile !Cil.printerForMaincil stdout "" global.file;
   exit 0
 
 let print_cfg : Global.t -> Global.t
 = fun global ->
-  `Assoc 
-    [ ("callgraph", CallGraph.to_json global.callgraph); 
+  `Assoc
+    [ ("callgraph", CallGraph.to_json global.callgraph);
       ("cfgs", InterCfg.to_json global.icfg)]
   |> Yojson.Safe.pretty_to_channel stdout; exit 0
 
-let finish t0 () = 
+let finish t0 () =
   my_prerr_endline "Finished properly.";
   Profiler.report stdout;
   my_prerr_endline (string_of_float (Sys.time () -. t0))
 
-let octagon_analysis : Global.t * ItvAnalysis.Table.t * ItvAnalysis.Table.t * Report.query list -> Report.query list 
-= fun (global,itvinputof,_,_) -> 
+let octagon_analysis : Global.t * ItvAnalysis.Table.t * ItvAnalysis.Table.t * Report.query list -> Report.query list
+= fun (global,itvinputof,_,_) ->
   StepManager.stepf true "Oct Sparse Analysis" OctAnalysis.do_analysis (global,itvinputof)
   |> (fun (_,_,_,alarm) -> alarm)
 
-let extract_feature : Global.t -> Global.t 
+let extract_feature : Global.t -> Global.t
 = fun global ->
-  if !Options.extract_loop_feat then 
+  if !Options.extract_loop_feat then
     let _ = UnsoundLoop.extract_feature global |> UnsoundLoop.print_feature in
     exit 0
   else if !Options.extract_lib_feat then
     let _ = UnsoundLib.extract_feature global |> UnsoundLib.print_feature in
     exit 0
   else global
-    
+
 let main () =
   let t0 = Sys.time () in
   let _ = Profiler.start_logger () in
@@ -85,7 +85,7 @@ let main () =
 
   Cil.initCIL ();
 
-  try 
+  try
     StepManager.stepf true "Front-end" Frontend.parse ()
     |> Frontend.makeCFGinfo
     |> init_analysis
