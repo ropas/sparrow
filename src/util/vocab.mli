@@ -17,7 +17,7 @@ val (&>)  : 'a option -> ('a -> 'b) -> 'b option
 val ( @ ) : 'a list -> 'a list -> 'a list
 val id : 'a -> 'a
 val flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c
-val cond : bool -> ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b 
+val cond : bool -> ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b
 val opt : bool -> ('a -> 'a) -> 'a -> 'a
 val tuple : 'a -> 'a * 'a
 val domof : ('a, 'b) BatMap.t -> 'a BatSet.t

@@ -8,4 +8,4 @@
 (* See the LICENSE file for details.                                   *)
 (*                                                                     *)
 (***********************************************************************)
-val select : Global.t -> BasicDom.PowLoc.t -> BasicDom.PowLoc.t 
+val select : Global.t -> BasicDom.PowLoc.t -> BasicDom.PowLoc.t

@@ -8,7 +8,7 @@
 (* See the LICENSE file for details.                                   *)
 (*                                                                     *)
 (***********************************************************************)
-module type S = 
+module type S =
 sig
   module Dom : InstrumentedMem.S
 
@@ -25,6 +25,6 @@ sig
   val empty : t
 end
 
-module Make(Dom: InstrumentedMem.S) : S 
+module Make(Dom: InstrumentedMem.S) : S
   with type Dom.t = Dom.t and type Dom.A.t = Dom.A.t
   and type Dom.PowA.t = Dom.PowA.t

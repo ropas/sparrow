@@ -18,7 +18,7 @@ open InterCfg
 open ItvAnalysis
 open OctDom
 open OctImpactDom
-open AlarmExp 
+open AlarmExp
 open Report
 open ArrayBlk
 
@@ -28,21 +28,21 @@ module Spec = Analysis.Spec
 module Mem = OctImpactDom.Mem
 
 let check pid v1 v2opt v2exp ptrmem mem : (AbsOct.t option * Allocsite.t option * string) list =
-  let arr = ItvDom.Val.array_of_val v1 in 
-  if ArrayBlk.eq arr ArrayBlk.bot || ArrayBlk.cardinal arr > 1 then 
+  let arr = ItvDom.Val.array_of_val v1 in
+  if ArrayBlk.eq arr ArrayBlk.bot || ArrayBlk.cardinal arr > 1 then
     ItvAnalysis.check_bo v1 v2opt |> List.map (fun (s, a, d) -> (None, a, d))
   else
     ArrayBlk.foldi (fun a arr lst ->
-      let offset = 
+      let offset =
         match v2opt with
         | None -> arr.ArrInfo.offset
         | Some v2 -> Itv.plus arr.ArrInfo.offset (ItvDom.Val.itv_of_val v2) in
       let size_loc = OctLoc.of_size a in
       let oct_status =
-        try 
-          match v2exp, arr.ArrInfo.size with 
+        try
+          match v2exp, arr.ArrInfo.size with
            Some (Cil.Lval x), size
-         | Some (Cil.BinOp (_, Cil.Lval x, Cil.Const _, _)), size 
+         | Some (Cil.BinOp (_, Cil.Lval x, Cil.Const _, _)), size
             when Itv.lower size >0 && Itv.lower offset >= 0 ->
             let idx_set = ItvSem.eval_lv pid x ptrmem in
             if PowLoc.cardinal idx_set = 1 then
@@ -57,7 +57,7 @@ let check pid v1 v2opt v2exp ptrmem mem : (AbsOct.t option * Allocsite.t option 
       (oct_status, Some a, Report.string_of_alarminfo offset arr.ArrInfo.size)::lst
     ) arr []
 
-let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t 
+let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t
   -> (query * AbsOct.t option) list -> (query * AbsOct.t option) list
 =fun node aexp ptrmem mem queries ->
   let pid = InterCfg.Node.get_pid node in
@@ -66,56 +66,56 @@ let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t
       let v1 = ItvDom.Mem.lookup (ItvSem.eval_lv (InterCfg.Node.get_pid node) lv ptrmem) ptrmem in
       let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e ptrmem in
       check pid v1 (Some v2) (Some e) ptrmem mem
-      |> List.map (fun (status,a,desc) -> 
-        match status with 
-          Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a; 
-                      status = Proven; desc = desc }, status) 
-        | None -> ({node = node; exp = aexp; loc= loc; allocsite = a; 
+      |> List.map (fun (status,a,desc) ->
+        match status with
+          Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a;
+                      status = Proven; desc = desc }, status)
+        | None -> ({node = node; exp = aexp; loc= loc; allocsite = a;
                     status = UnProven; desc = desc }, status))
   | DerefExp ((Cil.BinOp (op, e1, e2, _)) as e,loc) when op = Cil.PlusPI || op = Cil.IndexPI ->
       let v = ItvSem.eval (InterCfg.Node.get_pid node) e ptrmem in
       check pid v None (Some e2) ptrmem mem
-      |> List.map (fun (status,a,desc) -> 
-        match status with 
-          Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a; 
-                      status = Proven; desc = desc }, status) 
-        | None -> ({node = node; exp = aexp; loc= loc; allocsite = a; 
+      |> List.map (fun (status,a,desc) ->
+        match status with
+          Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a;
+                      status = Proven; desc = desc }, status)
+        | None -> ({node = node; exp = aexp; loc= loc; allocsite = a;
                     status = UnProven; desc = desc }, status))
-  | DerefExp (e,loc) -> (* dummy *) 
+  | DerefExp (e,loc) -> (* dummy *)
       let v = ItvSem.eval (InterCfg.Node.get_pid node) e ptrmem in
       check pid v None None ptrmem mem
-      |> List.map (fun (status,a,desc) -> 
-        match status with 
-          Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a; 
-                      status = Proven; desc = desc }, status) 
-        | None -> ({node = node; exp = aexp; loc= loc; allocsite = a; 
+      |> List.map (fun (status,a,desc) ->
+        match status with
+          Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a;
+                      status = Proven; desc = desc }, status)
+        | None -> ({node = node; exp = aexp; loc= loc; allocsite = a;
                     status = UnProven; desc = desc }, status))
   | Strcpy (e1, e2, loc) ->
       let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
       let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
-      let v2 = ItvDom.Val.of_itv (ArrayBlk.nullof (ItvDom.Val.array_of_val v2)) in 
+      let v2 = ItvDom.Val.of_itv (ArrayBlk.nullof (ItvDom.Val.array_of_val v2)) in
       check pid v1 (Some v2) None ptrmem mem
-      |> List.map (fun (status,a,desc) -> 
-        match status with 
-          Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a; 
+      |> List.map (fun (status,a,desc) ->
+        match status with
+          Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
                        status = Proven; desc = desc }, status)
-        | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a; 
+        | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
                      status = UnProven; desc = desc }, status))
     | Strcat (e1, e2, loc) ->
         let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
-        let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in 
+        let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
         let np1 = ArrayBlk.nullof (ItvDom.Val.array_of_val v1) in
         let np2 = ArrayBlk.nullof (ItvDom.Val.array_of_val v2) in
         let np = ItvDom.Val.of_itv (Itv.plus np1 np2) in
         check pid v1 (Some np) None ptrmem mem
-        |> List.map (fun (status,a,desc) -> 
-          match status with 
-            Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a; 
+        |> List.map (fun (status,a,desc) ->
+          match status with
+            Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
                          status = Proven; desc = desc }, status)
-          | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a;   
+          | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
                        status = UnProven; desc = desc }, status))
-    | Strncpy (e1, e2, e3, loc) 
-    | Memcpy (e1, e2, e3, loc) 
+    | Strncpy (e1, e2, e3, loc)
+    | Memcpy (e1, e2, e3, loc)
     | Memmove (e1, e2, e3, loc) ->
         let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
         let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
@@ -123,26 +123,26 @@ let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t
         let v3 = ItvSem.eval (InterCfg.Node.get_pid node) e3_1 ptrmem in
         let lst1 = check pid v1 (Some v3) (Some e3) ptrmem mem in
         let lst2 = check pid v2 (Some v3) (Some e2) ptrmem mem in
-        (lst1@lst2) 
-        |> List.map (fun (status,a,desc) -> 
-            match status with 
-              Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a; 
+        (lst1@lst2)
+        |> List.map (fun (status,a,desc) ->
+            match status with
+              Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
                            status = Proven; desc = desc }, status)
-            | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a; 
+            | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
                          status = UnProven; desc = desc }, status))
   | _ -> []) @ queries
 
-let display_alarms title alarms_part = 
+let display_alarms title alarms_part =
   prerr_endline "";
   prerr_endline ("= " ^ title ^ " =");
   let alarms_part = BatMap.bindings alarms_part in
   let alarms_part = Report.sort_partition alarms_part in
   List.iteri (fun k (part_unit, qs) ->
-    prerr_string (string_of_int (k + 1) ^ ". " ^ CilHelper.s_location part_unit ^ " "); 
+    prerr_string (string_of_int (k + 1) ^ ". " ^ CilHelper.s_location part_unit ^ " ");
     prerr_string (string_of_set id (list2set (List.map (fun q -> InterCfg.Node.get_pid q.node) qs)));
     prerr_newline ();
     List.iter (fun q ->
-      (match q.status with 
+      (match q.status with
          Proven -> prerr_string "  (O)"
        | _ -> prerr_string "  (X)");
       prerr_string ( "  " ^ AlarmExp.to_string q.exp ^ " @");
@@ -154,14 +154,14 @@ let display_alarms title alarms_part =
     ) qs
   ) alarms_part
 
-let filter : query list -> query list -> query list 
+let filter : query list -> query list -> query list
 = fun itv_queries oct_queries ->
   List.fold_left2 (fun qs iq oq ->
       match iq.status, oq.status with
         Proven, _ -> qs
       | _, _ -> oq::qs) [] itv_queries oct_queries
 
-let diff : query list -> query list -> query list 
+let diff : query list -> query list -> query list
 = fun itv_queries oct_queries ->
   List.fold_left2 (fun qs iq oq ->
       match iq.status, oq.status with
@@ -173,10 +173,10 @@ let print : query list -> query list -> unit
 (*  let itv_proven = get itv_queries Proven in1*)
   filter itv_queries oct_queries
   |> List.filter (fun q -> q.status <> BotAlarm)
-  |> partition 
+  |> partition
   |> display_alarms "Impact Pre-analysis Results"
 
-let generate (global, itvinputof, itv_queries, inputof) = 
+let generate (global, itvinputof, itv_queries, inputof) =
   let nodes = InterCfg.nodesof global.icfg in
   let total = List.length nodes in
   list_fold (fun node (qs,k) ->
@@ -198,16 +198,16 @@ let inspect_alarm (global,itvinputof,inputof,outputof) =
   let itv_queries = ItvAnalysis.generate (global,itvinputof,Report.BO) in
   let (oct_queries, absocts) = generate (global, itvinputof, itv_queries, inputof) |> List.split in
   print itv_queries oct_queries;
-  List.fold_left (fun rel aoct -> 
-    match aoct with 
+  List.fold_left (fun rel aoct ->
+    match aoct with
       Some p -> Relation.add_absoct p rel
     | None -> rel) Relation.empty absocts
   |> Relation.get_packconf
   |> PackConf.make itvinputof
 
-let do_analysis (global,itvinputof) = 
-  let spec = { Spec.empty with 
-       Spec.locset = OctImpactDom.packconf; 
+let do_analysis (global,itvinputof) =
+  let spec = { Spec.empty with
+       Spec.locset = OctImpactDom.packconf;
        Spec.locset_fs = OctImpactDom.packconf;
        Spec.ptrinfo = itvinputof;
        Spec.premem = Mem.top OctImpactDom.packconf }
@@ -218,7 +218,7 @@ let do_analysis (global,itvinputof) =
 (* ********** *
  * Marshaling *
  * ********** *)
-let marshal_in : Global.t * ItvDom.Table.t -> Global.t * ItvDom.Table.t * Table.t * Table.t 
+let marshal_in : Global.t * ItvDom.Table.t -> Global.t * ItvDom.Table.t * Table.t * Table.t
 = fun (global,itvinputof) ->
   let filename = Filename.basename global.file.fileName in
   let global = MarshalManager.input (filename ^ ".octimpact.global") in

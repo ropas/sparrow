@@ -16,9 +16,9 @@ module C = Cil
 module F = Frontc
 module E = Errormsg
 
-let files = ref []  
+let files = ref []
 let marshal_file = ref ""
- 
+
 let args : string -> unit
 = fun f ->
   if Sys.file_exists f then
@@ -32,7 +32,7 @@ let args : string -> unit
     let _ = prerr_endline ("Error: " ^ f ^ ": No such file") in
     exit 1
 
-let parseOneFile : string -> C.file 
+let parseOneFile : string -> C.file
 = fun fname ->
   (* PARSE and convert to CIL *)
   if !Cilutil.printStages then ignore (E.log "Parsing %s\n" fname);
@@ -42,7 +42,7 @@ let parseOneFile : string -> C.file
   );
   cil
 
-let parse : unit -> C.file 
+let parse : unit -> C.file
 = fun () ->
   match List.map parseOneFile !files with
     [one] -> one
@@ -55,11 +55,11 @@ let parse : unit -> C.file
       merged
 
 let makeCFGinfo : Cil.file -> Cil.file
-=fun f -> 
-  ignore (Partial.calls_end_basic_blocks f) ; 
-  ignore (Partial.globally_unique_vids f) ; 
+=fun f ->
+  ignore (Partial.calls_end_basic_blocks f) ;
+  ignore (Partial.globally_unique_vids f) ;
   Cil.iterGlobals f (fun glob -> match glob with
-    Cil.GFun(fd,_) -> 
+    Cil.GFun(fd,_) ->
                   Cil.prepareCFG fd ;
                   (* jc: blockinggraph depends on this "true" arg *)
                   ignore (Cil.computeCFGInfo fd true)
@@ -69,7 +69,7 @@ let makeCFGinfo : Cil.file -> Cil.file
 (* true if the given function has variable number of arguments *)
 let is_varargs : string -> Cil.file -> bool
 =fun fid file ->
-  Cil.foldGlobals file (fun b global -> 
+  Cil.foldGlobals file (fun b global ->
     match global with
     | GFun (fd,_) when fd.svar.vname = fid ->
         (match fd.svar.vtype with
@@ -82,10 +82,10 @@ let inline : Global.t -> bool
 =fun global ->
   let f = global.file in
   let regexps = List.map (fun str -> Str.regexp (".*" ^ str ^ ".*")) !Options.inline in
-  let to_inline = 
+  let to_inline =
     list_fold (fun global to_inline ->
       match global with
-      | GFun (fd,_) when List.exists (fun regexp -> Str.string_match regexp fd.svar.vname 0) regexps -> 
+      | GFun (fd,_) when List.exists (fun regexp -> Str.string_match regexp fd.svar.vname 0) regexps ->
         fd.svar.vname :: to_inline
       | _ -> to_inline
     ) f.globals [] in

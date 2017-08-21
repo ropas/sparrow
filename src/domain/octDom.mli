@@ -13,7 +13,7 @@
 module OctLoc : sig
   type t = Loc of BasicDom.Loc.t | Size of BasicDom.Allocsite.t
   include AbsDom.SET with type t := t
-  val dummy : t 
+  val dummy : t
   val of_loc : BasicDom.Loc.t -> t
   val of_size : BasicDom.Allocsite.t -> t
   val to_var : t -> Apron.Var.t

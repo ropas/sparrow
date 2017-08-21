@@ -76,12 +76,12 @@ and s_uop u = tostring (d_unop () u)
 and s_bop b = tostring (d_binop () b)
 
 and s_instr : instr -> string
-=fun i -> 
+=fun i ->
   match i with
   | Set (lv,exp,_) -> "Set(" ^ s_lv lv ^ "," ^ s_exp exp ^ ")"
-  | Call (Some lv,fexp,params,_) -> 
+  | Call (Some lv,fexp,params,_) ->
       s_lv lv ^ ":= Call(" ^ s_exp fexp ^ s_exps params ^ ")"
-  | Call (None,fexp,params,_) -> 
+  | Call (None,fexp,params,_) ->
       "Call(" ^ s_exp fexp ^ s_exps params ^ ")"
   | Asm _ -> "Asm"
 
@@ -91,10 +91,10 @@ and s_instrs : instr list -> string
 
 let s_location : location -> string
 =fun loc ->
-  let file = try 
+  let file = try
     let idx = String.rindex loc.file '/' in
     let len = String.length loc.file in
-      String.sub loc.file (idx+1) (len-idx-1) 
+      String.sub loc.file (idx+1) (len-idx-1)
     with _ -> loc.file
   in file ^ ":" ^ string_of_int loc.line
 
@@ -128,11 +128,11 @@ let not_binop : binop -> binop = fun op ->
   | _ -> invalid_arg "cilHelper.ml: rev_binop"
 
 
-let rec make_cond_simple : exp -> exp option 
+let rec make_cond_simple : exp -> exp option
 = fun cond ->
   match cond with
-  | BinOp (op, CastE (_, e1), e2, t) 
-  | BinOp (op, e1, CastE (_, e2), t) -> 
+  | BinOp (op, CastE (_, e1), e2, t)
+  | BinOp (op, e1, CastE (_, e2), t) ->
     let newe = BinOp (op, e1, e2, t) in
     make_cond_simple newe
   | BinOp (op, Lval _, _, _)
@@ -158,13 +158,13 @@ let rec make_cond_simple : exp -> exp option
   | UnOp (LNot, UnOp (LNot, e, _), _) -> make_cond_simple e
   | UnOp (LNot, Lval _, _) -> Some cond
   | Lval _ -> Some cond
-  | _ -> None 
+  | _ -> None
 
 let rec remove_cast = function
     Cil.CastE (_, e) -> remove_cast e
   | Cil.BinOp (b, e1, e2, t) -> Cil.BinOp(b, remove_cast e1, remove_cast e2, t)
   | Cil.UnOp (u, e, t) -> Cil.UnOp (u, remove_cast e, t)
-  | e -> e 
+  | e -> e
 
 let rec remove_coeff = function
     Cil.BinOp (Cil.Mult, Cil.SizeOfE _, e1, _)
@@ -173,20 +173,20 @@ let rec remove_coeff = function
   | Cil.BinOp (Cil.Mult, e1, Cil.SizeOf _, _) -> remove_coeff e1
   | Cil.BinOp (b, e1, e2, t) -> Cil.BinOp(b, remove_coeff e1, remove_coeff e2, t)
   | Cil.UnOp (u, e, t) -> Cil.UnOp (u, remove_coeff e, t)
-  | e -> e 
+  | e -> e
 
 let is_unsigned : Cil.typ -> bool = function
-  | Cil.TInt (i, _) -> 
-    i = Cil.IUChar || i = Cil.IUInt || i = Cil.IUShort || i = Cil.IULong || i = Cil.IULongLong 
-  | _ -> false 
+  | Cil.TInt (i, _) ->
+    i = Cil.IUChar || i = Cil.IUInt || i = Cil.IUShort || i = Cil.IULong || i = Cil.IULongLong
+  | _ -> false
 
 (* NOTE : Cil.bitsSizeOf often fails: just return top for the moment
- * Adhoc solution: To avoid this failure, translate original C sources 
+ * Adhoc solution: To avoid this failure, translate original C sources
  * into "CIL" (using -il option) and analyze the CIL program. *)
 let byteSizeOf : Cil.typ -> int
-=fun typ -> 
+=fun typ ->
   try (Cil.bitsSizeOf typ) / 8
-  with e -> 
-    (if !Options.verbose >= 2 then prerr_endline ("warn: Cil.bitsSizeOf (" ^ s_type typ ^ ")")); 
+  with e ->
+    (if !Options.verbose >= 2 then prerr_endline ("warn: Cil.bitsSizeOf (" ^ s_type typ ^ ")"));
     raise e
 

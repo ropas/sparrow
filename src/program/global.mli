@@ -24,4 +24,4 @@ val init : Cil.file -> t
 val is_rec : InterCfg.pid -> t -> bool
 val is_undef : InterCfg.pid -> t -> bool
 
-val remove_unreachable_functions : t -> t 
+val remove_unreachable_functions : t -> t

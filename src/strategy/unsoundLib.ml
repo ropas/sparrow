@@ -17,10 +17,10 @@ open BasicDom
 open ItvDom
 open ItvSem
 
-module AccessSem = 
+module AccessSem =
 struct
   include AccessSem.Make(ItvSem)
-  let accessof_eval pid e mem = 
+  let accessof_eval pid e mem =
     Dom.init_access ();
     let _ = ItvSem.eval pid e mem in
     Dom.return_access ()
@@ -123,44 +123,44 @@ let feature_vector_of f =
    f.points_to;
    f.cstring;]
 
-let string_of_trset trset = 
-  BatMap.foldi (fun k v s -> 
+let string_of_trset trset =
+  BatMap.foldi (fun k v s ->
       s^k^"\t"^(string_of_raw_feature v)^"\n") trset ""
 
-let add_constant exps feat = 
+let add_constant exps feat =
   let rec const_condition = function
-    | Const _ 
+    | Const _
     | SizeOf _ | SizeOfE _ -> true
     | UnOp (_, e, _) -> const_condition e
     | _ -> false
   in
   if exps = [] then { feat with constant = true }
-  else 
+  else
     List.fold_left (fun feat exp ->
       if const_condition (CilHelper.remove_cast exp) then
         { feat with constant = true }
       else feat) feat exps
 
-let add_size exps feat = 
+let add_size exps feat =
   { feat with size = float_of_int (List.length exps) }
 
-let add_return lvo feat = 
-  match lvo with 
+let add_return lvo feat =
+  match lvo with
     Some _ -> { feat with return = true }
-  | _ -> feat 
+  | _ -> feat
 
-let add_return_int pid lvo cfg feat = 
-  match lvo with 
-    Some x -> 
+let add_return_int pid lvo cfg feat =
+  match lvo with
+    Some x ->
     { feat with return_int = (Cil.isIntegralType (Cil.typeOf (Cil.Lval x))) }
-  | _ -> feat 
+  | _ -> feat
 
 let sem_fun = ItvSem.run AbsSem.Strong ItvSem.Spec.empty
 
 let add_points_to global node exps feat =
-  if exps = [] then feat 
+  if exps = [] then feat
   else
-    let locset = 
+    let locset =
       PowLoc.remove Loc.null (Access.Info.accessof (AccessSem.accessof global node sem_fun global.mem))
     in
     { feat with points_to = float_of_int (PowLoc.cardinal locset) /. (float_of_int (List.length exps))  }
@@ -169,12 +169,12 @@ let add_extern global node exps feat =
   if exps = [] then feat
   else
     let pid = Node.get_pid node in
-    let has_extern e = 
+    let has_extern e =
       let locset = Access.Info.accessof (AccessSem.accessof_eval pid e global.mem) in
       let v = Mem.lookup locset global.mem in
-      let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array)  in 
+      let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array)  in
       let locset = PowLoc.join (Val.pow_loc_of_val (Mem.lookup locset global.mem))
-                   locset in 
+                   locset in
       PowLoc.exists Loc.is_ext_allocsite locset
     in
     let count = List.fold_left (fun count e ->
@@ -185,18 +185,18 @@ let add_extern global node exps feat =
 let add_gvar global node feat =
   let locset = Access.Info.accessof (AccessSem.accessof global node sem_fun global.mem) in
   let v = Mem.lookup locset global.mem in
-  let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array) 
-        |> PowLoc.join locset in 
+  let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array)
+        |> PowLoc.join locset in
   let locset = PowLoc.remove Loc.null locset in
-  if (PowLoc.exists Loc.is_gvar locset) || 
+  if (PowLoc.exists Loc.is_gvar locset) ||
      (PowLoc.exists (fun x -> (String.sub (Loc.to_string x) 0 3) = "_G_") locset)
-  then 
+  then
     { feat with gvar = true }
   else feat
 
-let add_finite global node exps feat = 
+let add_finite global node exps feat =
   let pid = Node.get_pid node in
-  let is_finite e = 
+  let is_finite e =
     let v = ItvSem.eval pid e global.mem in
     let itv = Val.itv_of_val v in
     let arr = Val.array_of_val v in
@@ -205,41 +205,41 @@ let add_finite global node exps feat =
   if ((List.length exps = 3) && is_finite (List.nth exps 2)) ||
      ((List.length exps = 2) && is_finite (List.nth exps 1)) ||
      ((List.length exps = 1) && is_finite (List.nth exps 0)) ||
-     (List.length exps = 0) then 
+     (List.length exps = 0) then
       { feat with finite = 1.0 }
     else feat
 
 let add_cstring global cond_node cfg exps feat =
   let pid = Node.get_pid cond_node in
-  let is_cstring e = 
+  let is_cstring e =
     let use = Access.Info.useof (AccessSem.accessof_eval pid e global.mem) in
     PowLoc.exists (fun loc ->
         let v = Mem.lookup (PowLoc.singleton loc) global.mem in
-        let nullpos = ArrayBlk.nullof (Val.array_of_val v) in 
+        let nullpos = ArrayBlk.nullof (Val.array_of_val v) in
         let v = Mem.lookup (PowLoc.singleton loc) global.mem in
-        let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array)  in 
+        let locset = PowLoc.join (Val.pow_loc_of_val v) (Val.array_of_val v |> ArrayBlk.pow_loc_of_array)  in
         let locset = PowLoc.fold (fun x -> BatSet.add (Loc.to_string x)) locset BatSet.empty in
         let strlib = List.map (fun x -> "__extern__"^x) ["getenv"; "rindex"; "index"; "strdup"; "strrchr"; "strstr"; "basename" ; "strtok" ; "fgets"; "_IO_getc"] in
-        (BatSet.exists (fun x -> List.mem x strlib) locset) || 
+        (BatSet.exists (fun x -> List.mem x strlib) locset) ||
            (not (Itv.is_bot nullpos) && (Itv.is_finite nullpos))) use
   in
   if ((List.length exps = 2) && is_cstring (List.nth exps 1)) ||
      ((List.length exps = 1) && is_cstring (List.nth exps 0)) ||
-     (List.length exps = 0) then 
+     (List.length exps = 0) then
       { feat with cstring = 1.0 }
     else feat
 
 let add_inside_loop global node exps pid scc_list feat =
-  if List.exists (fun x -> List.mem (InterCfg.Node.get_cfgnode node) x) scc_list then 
+  if List.exists (fun x -> List.mem (InterCfg.Node.get_cfgnode node) x) scc_list then
     { feat with inside_loop = true }
   else feat
 
 let add_use_ret_in_loop global node exps pid scc_list feat =
-  let def = PowLoc.filter (fun x -> not (Loc.is_ext_allocsite x)) 
+  let def = PowLoc.filter (fun x -> not (Loc.is_ext_allocsite x))
     (Access.Info.defof (AccessSem.accessof global node sem_fun global.mem)) in
-  let b = 
+  let b =
     List.exists (fun loop ->
-      List.exists (fun x -> 
+      List.exists (fun x ->
           let inter_node = InterCfg.Node.make pid x in
           let use = Access.Info.useof (AccessSem.accessof global inter_node sem_fun global.mem) in
           (inter_node <> node) && ((PowLoc.meet use def) <> PowLoc.bot)) loop) scc_list
@@ -247,10 +247,10 @@ let add_use_ret_in_loop global node exps pid scc_list feat =
   { feat with use_ret_in_loop = b }
 
 let add_update_param_in_loop global node exps pid scc_list feat =
-  let b = 
+  let b =
     List.exists (fun loop ->
       let use = List.fold_left (fun use e -> Access.Info.useof (AccessSem.accessof_eval pid e global.mem)) PowLoc.bot exps in
-      List.exists (fun x -> 
+      List.exists (fun x ->
           let inter_node = InterCfg.Node.make pid x in
           let def = Access.Info.defof (AccessSem.accessof global inter_node sem_fun global.mem) in
           (inter_node <> node) && ((PowLoc.meet use def) <> PowLoc.bot)) loop) scc_list
@@ -268,7 +268,7 @@ let add_out_of_fun global node cfg feat =
   let def = Access.Info.defof (AccessSem.accessof global node sem_fun global.mem) in
   let use_of_ret = IntraCfg.fold_node (fun intra_node locset ->
       match IntraCfg.find_cmd intra_node cfg with
-        IntraCfg.Cmd.Creturn (Some e, _) -> 
+        IntraCfg.Cmd.Creturn (Some e, _) ->
           let node = InterCfg.Node.make (IntraCfg.get_pid cfg) intra_node in
           let use = Access.Info.useof (AccessSem.accessof global node sem_fun global.mem) in
           PowLoc.join use locset
@@ -276,7 +276,7 @@ let add_out_of_fun global node cfg feat =
   in
   if (PowLoc.meet def use_of_ret) <> PowLoc.bot then
     { feat with out_of_fun = true }
-  else feat 
+  else feat
 
 let add_from f feat =
   if (Str.string_match (Str.regexp ".*string.*") (CilHelper.s_location f.vdecl) 0) then
@@ -284,21 +284,21 @@ let add_from f feat =
   else feat
 
 let ignore_libs = ["fprintf"; "printf"; "close"; "exit"; "perror"; "fileno"; "unlink"; "free"; "sprintf";
-                   "fflush"; "fclose"; "__builtin_va_end"; "vfprintf"; "__builtin_va_start"; 
+                   "fflush"; "fclose"; "__builtin_va_end"; "vfprintf"; "__builtin_va_start";
                    "signal"; "__assert_fail"; "putchar"; ]
 
-let lib_feature global cfg trset = 
+let lib_feature global cfg trset =
   let scc_list = IntraCfg.get_scc_list cfg |> List.filter (fun x -> List.length x > 1) in
   IntraCfg.fold_node (fun intra_node trset ->
-    match IntraCfg.find_cmd intra_node cfg with 
+    match IntraCfg.find_cmd intra_node cfg with
       IntraCfg.Cmd.Ccall (lvo, Cil.Lval (Cil.Var f, Cil.NoOffset), exps, loc)
-      when Global.is_undef f.vname global && 
+      when Global.is_undef f.vname global &&
            not (List.mem f.vname ignore_libs) -> (* undefined library functions *)
         let libid = (CilHelper.s_location loc)^":"^f.vname in
         let pid = IntraCfg.get_pid cfg in
         let node = InterCfg.Node.make pid intra_node in
         let feat = empty_feature
-          |> add_constant exps 
+          |> add_constant exps
           |> add_return lvo
           |> add_return_int pid lvo cfg
           |> add_size exps
@@ -317,41 +317,41 @@ let lib_feature global cfg trset =
         BatMap.add libid feat trset
     | _ -> trset) cfg trset
 
-let normalize trset = 
-  let max_size = 
+let normalize trset =
+  let max_size =
     BatMap.fold (fun v max -> if v.size > max then v.size else max) trset 0.0
   in
-  let max_points_to = 
+  let max_points_to =
     BatMap.fold (fun v max -> if v.points_to > max then v.points_to else max) trset 0.0
   in
-  BatMap.map (fun feat -> 
-    { feat with 
+  BatMap.map (fun feat ->
+    { feat with
       size = feat.size /. max_size;
       points_to = feat.points_to /. max_points_to;
-      }) trset 
+      }) trset
 
-let extract_feature : Global.t -> data 
+let extract_feature : Global.t -> data
 = fun global ->
   let trset = Cil.foldGlobals global.file (fun trset glob ->
-    match glob with 
+    match glob with
       Cil.GFun (fd, _) ->
-        (try 
+        (try
           let cfg = InterCfg.cfgof global.icfg fd.svar.vname in
           lib_feature global cfg trset
         with _ -> trset)
-    | _ -> trset) BatMap.empty 
+    | _ -> trset) BatMap.empty
   in
-  if !Options.debug then  
+  if !Options.debug then
     (prerr_endline "== features for library ==";
     BatMap.iter (fun k v -> prerr_endline (k^"\n"^(string_of_feature v))) trset);
   normalize trset
-  
+
 let print_feature : data -> unit
-= fun data -> 
+= fun data ->
   string_of_trset data |> print_string
 
 let get_harmless_libs : Global.t -> lib BatSet.t
-= fun global -> 
+= fun global ->
   if !Options.bugfinder < 1 then BatSet.empty
   else
     let data = extract_feature global in
@@ -360,9 +360,9 @@ let get_harmless_libs : Global.t -> lib BatSet.t
     let py = Lymp.init ~exec:"python2" sparrow_bin_path in
     let py_module = Lymp.get_module py "harmless_unsoundness" in
     let classifier = Lymp.Pyref (Lymp.get_ref py_module "load" [Lymp.Pystr (sparrow_data_path ^ "/harmless_lib_clf")]) in
-    let set = BatMap.foldi (fun l fvec loops -> 
+    let set = BatMap.foldi (fun l fvec loops ->
         let vec = feature_vector_of fvec in
-        let vec = Lymp.Pylist (List.map (fun x -> Lymp.Pyfloat x) vec) in 
+        let vec = Lymp.Pylist (List.map (fun x -> Lymp.Pyfloat x) vec) in
         let b = Lymp.get_bool py_module "is_harmless" [classifier; vec] in
         if b then BatSet.add l loops else loops
         ) data BatSet.empty

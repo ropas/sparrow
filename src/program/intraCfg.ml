@@ -13,7 +13,7 @@
 open Vocab
 open Cil
 open CilHelper
-open Printf 
+open Printf
 
 module Node = struct
   type t = ENTRY | EXIT | Node of int [@@deriving compare]
@@ -31,19 +31,19 @@ module Node = struct
   let nid = ref 0
 
   let fromCilStmt : Cil.stmt -> t
-  =fun s -> 
+  =fun s ->
     if !nid < s.sid then nid := s.sid;
     Node s.sid
 
   let make () = nid := !nid + 1; Node !nid
 
-  let id n = 
+  let id n =
     match n with
     | ENTRY
     | EXIT -> -1
-    | Node id -> id 
+    | Node id -> id
 
-  let to_string : t -> string 
+  let to_string : t -> string
   =fun n ->
     match n with
     | ENTRY -> "ENTRY"
@@ -56,20 +56,20 @@ end
 module NodeSet = BatSet.Make(Node)
 
 module Cmd = struct
-  type t = 
-  | Cinstr of instr list 
-  | Cif of exp * block * block * location 
+  type t =
+  | Cinstr of instr list
+  | Cif of exp * block * block * location
   | CLoop of location
   (* final graph has the following cmds only *)
   | Cset of lval * exp * location
-  | Cexternal of lval * location 
+  | Cexternal of lval * location
   | Calloc of lval * alloc * static * location
   | Csalloc of lval * string * location
   | Cfalloc of lval * fundec * location
   | Cassume of exp * location
-  | Ccall of lval option * exp * exp list * location 
+  | Ccall of lval option * exp * exp list * location
   | Creturn of exp option * location
-  | Casm of attributes * string list * 
+  | Casm of attributes * string list *
             (string option * string * lval) list *
             (string option * string * exp) list *
             string list * location
@@ -77,15 +77,15 @@ module Cmd = struct
   and alloc = Array of exp | Struct of compinfo
   and static = bool
 
-  let fromCilStmt: Cil.stmtkind -> t 
-  =fun s -> 
+  let fromCilStmt: Cil.stmtkind -> t
+  =fun s ->
     match s with
     | Instr instrs -> Cinstr instrs
     | If (exp,b1,b2,loc) -> Cif (exp,b1,b2,loc)
     | Loop (_,loc,_,_) -> CLoop loc
     | Return (expo,loc) -> Creturn (expo,loc)
     | _ -> Cskip
-  
+
   let rec to_string : t -> string
   =fun c ->
     match c with
@@ -96,12 +96,12 @@ module Cmd = struct
     | Calloc (lv, Struct compinfo,_,_) -> "alloc("^s_lv lv^",{"^compinfo.cname^"})"
     | Csalloc (lv, s, _) -> "salloc("^s_lv lv^", \""^s^"\")"
     | Cfalloc (lv, f, _) -> "falloc("^s_lv lv^", "^f.svar.vname^")"
-    | Ccall (Some lv,fexp,params,_) -> 
+    | Ccall (Some lv,fexp,params,_) ->
        s_lv lv ^ ":= call(" ^ s_exp fexp ^ ", "^s_exps params ^ ")"
-    | Ccall (None,fexp,params,_) -> 
+    | Ccall (None,fexp,params,_) ->
       "call(" ^ s_exp fexp ^ s_exps params ^ ")"
     | Creturn (Some e,_) -> "return " ^ s_exp e
-    | Creturn (None,_) -> "return" 
+    | Creturn (None,_) -> "return"
     | Cif (e,b1,b2,loc) -> "if"
     | Cassume (e,loc) -> "assume(" ^ s_exp e ^ ")"
     | CLoop _ -> "loop"
@@ -179,13 +179,13 @@ let get_formals : t -> Cil.varinfo list
 let get_formals_lval : t -> Cil.lval list
 = fun g -> List.map Cil.var g.fd.sformals
 
-let get_scc_list : t -> node list list 
+let get_scc_list : t -> node list list
 = fun g -> g.scc_list
 
-let children_of_dom_tree node g = 
+let children_of_dom_tree node g =
   NodeSet.remove node (NodeSet.of_list (G.succ g.dom_tree node))
 
-let parent_of_dom_tree node g = 
+let parent_of_dom_tree node g =
   match G.pred g.dom_tree node with
   | [] -> None
   | [p] -> Some p
@@ -203,10 +203,10 @@ let add_node : node -> t -> t
 =fun n g -> {g with graph = G.add_vertex g.graph n}
 
 let find_cmd : node -> t ->  cmd
-=fun n g -> 
+=fun n g ->
   try if n = Node.ENTRY || n = Node.EXIT then Cmd.Cskip
-      else BatMap.find n g.cmd_map 
-  with _ -> 
+      else BatMap.find n g.cmd_map
+  with _ ->
      raise (Failure ("Can't find cmd of " ^ Node.to_string n))
 
 let add_cmd : node -> cmd -> t -> t
@@ -219,7 +219,7 @@ let remove_edge : node -> node -> t -> t
 =fun n1 n2 g -> {g with graph = G.remove_edge g.graph n1 n2 }
 
 let remove_node : node -> t -> t
-=fun n g -> 
+=fun n g ->
   {g with graph = G.remove_vertex g.graph n ;
           cmd_map = BatMap.remove n g.cmd_map ;
           dom_fronts = BatMap.remove n g.dom_fronts;
@@ -229,7 +229,7 @@ let remove_node : node -> t -> t
 let add_new_node : node -> cmd -> node -> t -> t
 =fun n cmd s g ->
   let new_node = Node.make() in
-    (add_cmd new_node cmd 
+    (add_cmd new_node cmd
      >>> remove_edge n s
      >>> add_edge n new_node
      >>> add_edge new_node s) g
@@ -270,7 +270,7 @@ let is_returnnode : node -> t -> bool
 let entryof _ = Node.ENTRY
 let exitof _ = Node.EXIT
 
-let returnof : node -> t -> node 
+let returnof : node -> t -> node
 =fun n g ->
   if is_callnode n g then (
     assert (List.length (succ n g) = 1);
@@ -279,17 +279,17 @@ let returnof : node -> t -> node
 
 let is_inside_loop : node -> t -> bool
 =fun n g -> List.exists (fun scc -> List.length scc > 1 && List.mem n scc) g.scc_list
-      
+
 let callof : node -> t -> node
 =fun r g ->
   try
     List.find (fun c -> is_callnode c g && returnof c g = r) (nodesof g)
-  with _ -> 
+  with _ ->
     failwith "IntraCfg.callof: given node may not be a return-node"
 
 let generate_assumes : t -> t
-=fun g -> 
-  try 
+=fun g ->
+  try
     fold_node (fun n g ->
       match find_cmd n g with
       | Cmd.Cif (e,tb,fb,loc) ->
@@ -306,7 +306,7 @@ let generate_assumes : t -> t
             let fassert = Cmd.Cassume (UnOp (LNot,e,Cil.typeOf e),loc) in
               (add_new_node n fassert fbn
               >>> add_new_node n tassert tbn) g
-          else (* XXX : when if-statement has only one successor. 
+          else (* XXX : when if-statement has only one successor.
                         seems to happen inside dead code *)
             let tbn = List.nth succs 0 in
             let tassert = Cmd.Cassume (e,loc) in
@@ -320,19 +320,19 @@ let remove_if_loop : t -> t
 =fun g ->
   fold_node (fun n g ->
     match find_cmd n g with
-    | Cmd.Cif _ 
+    | Cmd.Cif _
     | Cmd.CLoop _ -> add_cmd n Cmd.Cskip g
     | _ -> g
   ) g g
 
 (* remove all nodes s.t. n1 -> empty_node -> n2 *)
 let remove_empty_nodes : t -> t
-=fun g -> 
+=fun g ->
   fold_node (fun n g ->
     if find_cmd n g = Cmd.Cskip &&
-       List.length (succ n g) = 1 && 
-       List.length (pred n g) = 1 
-    then 
+       List.length (succ n g) = 1 &&
+       List.length (pred n g) = 1
+    then
       let p = List.nth (pred n g) 0 in
       let s = List.nth (succ n g) 0 in
         g |> remove_node n |> add_edge p s
@@ -345,7 +345,7 @@ let flatten_instructions : t -> t
   fold_node (fun n g ->
     match find_cmd n g with
     | Cmd.Cinstr instrs when instrs <> [] ->
-      let cmds = 
+      let cmds =
         List.map (fun i ->
           match i with
           | Set (lv,e,loc) -> Cmd.Cset (lv,e,loc)
@@ -356,19 +356,19 @@ let flatten_instructions : t -> t
       let first,_ = List.nth pairs 0 in
       let last,_ = List.nth pairs (List.length pairs - 1) in
       let preds,succs = pred n g, succ n g in
-        g 
+        g
           |> (fun g -> (* add nodes in instrs *)
                 List.fold_left (fun g (n,c) ->
-                  add_node_with_cmd n c g) g pairs) 
+                  add_node_with_cmd n c g) g pairs)
           |> (fun g -> (* connect edges between instrs *)
                 fst (List.fold_left (fun (g,p) (n,c) ->
                             (add_edge p n g, n)) (g,n) pairs))
           |> list_fold (fun p -> add_edge p first) preds
           |> list_fold (fun s -> add_edge last s) succs
-          |> remove_node n 
+          |> remove_node n
 
     | Cmd.Cinstr [] -> add_cmd n Cmd.Cskip g
-    | _ -> g  
+    | _ -> g
   ) g g
 
 let make_array : Cil.fundec -> Cil.lval -> Cil.typ -> Cil.exp -> Cil.location -> node -> t -> (node * t)
@@ -388,14 +388,14 @@ let make_init_loop fd lv exp loc entry f g =
   (* i = 0 *)
   let init_node = Node.make () in
   let idxinfo = Cil.makeTempVar fd (Cil.TInt (IInt, [])) in
-  let idx = (Cil.Var idxinfo, Cil.NoOffset) in 
+  let idx = (Cil.Var idxinfo, Cil.NoOffset) in
   let init_value = Cil.Const (Cil.CInt64 (Int64.zero, IInt, None)) in
   let init_cmd = Cmd.Cset (idx, init_value, loc) in
   let g = add_cmd init_node init_cmd g in
   (* while (i < exp) *)
   let skip_node = Node.make () in
   let g = add_cmd skip_node Cmd.Cskip g in
-  let g = add_edge init_node skip_node g in 
+  let g = add_edge init_node skip_node g in
   let g = add_edge entry init_node g in
   let assume_node = Node.make () in
   let cond = Cil.BinOp (Cil.Lt, Cil.Lval idx, exp, Cil.intType) in
@@ -415,32 +415,32 @@ let make_init_loop fd lv exp loc entry f g =
   let g = add_cmd incr_node incr_cmd g in
   let g = add_edge term incr_node g in
   let g = add_edge incr_node skip_node g in
-  (nassume_node, g) 
+  (nassume_node, g)
 
 let rec make_nested_array : Cil.fundec -> Cil.lval -> Cil.typ -> Cil.exp -> Cil.location -> node -> bool -> t -> (node * t)
 = fun fd lv typ exp loc entry initialize g ->
   let typ = unrollTypeDeep typ in
   match typ with
     TArray (t, Some size, _) ->
-      let f assume_node element g = 
+      let f assume_node element g =
         (* tmp = malloc(size); lv[i] = tmp *)
         let tmp = (Cil.Var (Cil.makeTempVar fd (Cil.TPtr (Cil.TVoid [], []))), Cil.NoOffset) in
         let (term, g) = make_array fd tmp t size loc assume_node g in
-        let cast_node = Node.make () in  
+        let cast_node = Node.make () in
         let cast_cmd = Cmd.Cset (element, Cil.CastE (TPtr (t, []), Cil.Lval tmp), loc) in
         let g = g |> add_cmd cast_node cast_cmd |> add_edge term cast_node in
         make_nested_array fd element t size loc cast_node initialize g
       in
       make_init_loop fd lv exp loc entry f g
-  | TComp(comp, _) -> 
-      let f assume_node element g =  
+  | TComp(comp, _) ->
+      let f assume_node element g =
         (* tmp = malloc(size); lv[i] = tmp *)
         let (term, g) = make_struct fd element comp loc assume_node g in
         generate_allocs_field comp.cfields element fd term g
       in
       make_init_loop fd lv exp loc entry f g
-  | _ when initialize -> 
-      let f assume_node element g = 
+  | _ when initialize ->
+      let f assume_node element g =
         (* lv[i] = 0 *)
         let init_node = Node.make () in
         let init_cmd = Cmd.Cset (element, Cil.zero, loc) in
@@ -449,53 +449,53 @@ let rec make_nested_array : Cil.fundec -> Cil.lval -> Cil.typ -> Cil.exp -> Cil.
       make_init_loop fd lv exp loc entry f g
   | _ -> (entry, g)
 
-and generate_allocs_field : Cil.fieldinfo list -> Cil.lval -> Cil.fundec -> node -> t ->  (node * t) 
+and generate_allocs_field : Cil.fieldinfo list -> Cil.lval -> Cil.fundec -> node -> t ->  (node * t)
 =fun fl lv fd entry g ->
-  match fl with 
+  match fl with
     [] -> (entry, g)
-  | fieldinfo::t -> 
+  | fieldinfo::t ->
       begin
-      match Cil.unrollTypeDeep fieldinfo.ftype with 
-      | TArray (typ, Some exp, _) -> 
-          let field = addOffsetLval (Cil.Field (fieldinfo, Cil.NoOffset)) lv in 
+      match Cil.unrollTypeDeep fieldinfo.ftype with
+      | TArray (typ, Some exp, _) ->
+          let field = addOffsetLval (Cil.Field (fieldinfo, Cil.NoOffset)) lv in
           let tmp = (Cil.Var (Cil.makeTempVar fd Cil.voidPtrType), Cil.NoOffset) in
           let (term, g) = make_array fd tmp typ exp fieldinfo.floc entry g in
-          let cast_node = Node.make () in  
+          let cast_node = Node.make () in
           let cast_cmd = Cmd.Cset (field, Cil.CastE (Cil.TPtr (typ, []), Cil.Lval tmp), fieldinfo.floc) in
           let g = g |> add_cmd cast_node cast_cmd |> add_edge term cast_node in
           let (term, g) = make_nested_array fd field typ exp fieldinfo.floc cast_node false g in
             generate_allocs_field t lv fd term g
       | TComp (comp, _) ->
-          let field = addOffsetLval (Cil.Field (fieldinfo, Cil.NoOffset)) lv in 
+          let field = addOffsetLval (Cil.Field (fieldinfo, Cil.NoOffset)) lv in
           let (term, g) = make_struct fd field comp fieldinfo.floc entry g in
           let (term, g) = generate_allocs_field comp.cfields field fd term g in
           generate_allocs_field t lv fd term g
       | _ -> generate_allocs_field t lv fd entry g
       end
-and get_base_type typ = 
+and get_base_type typ =
   match typ with
     TArray (t, _, _)
   | TPtr (t, _) -> get_base_type t
   | _ -> typ
 
-let rec generate_allocs : Cil.fundec -> Cil.varinfo list -> node -> t -> (node * t) 
+let rec generate_allocs : Cil.fundec -> Cil.varinfo list -> node -> t -> (node * t)
 =fun fd vl entry g ->
-  match vl with 
+  match vl with
     [] -> (entry, g)
   | varinfo::t ->
       begin
-      match Cil.unrollTypeDeep varinfo.vtype with 
+      match Cil.unrollTypeDeep varinfo.vtype with
      | TArray (typ, Some exp, _) ->
-          let lv = (Cil.Var varinfo, Cil.NoOffset) in 
+          let lv = (Cil.Var varinfo, Cil.NoOffset) in
           let tmp = (Cil.Var (Cil.makeTempVar fd Cil.voidPtrType), Cil.NoOffset) in
           let (term, g) = make_array fd tmp typ exp varinfo.vdecl entry g in
-          let cast_node = Node.make () in  
+          let cast_node = Node.make () in
           let cast_cmd = Cmd.Cset (lv, Cil.CastE (Cil.TPtr (unrollTypeDeep typ, []), Cil.Lval tmp), varinfo.vdecl) in
           let g = g |> add_cmd cast_node cast_cmd |> add_edge term cast_node in
           let (term, g) = make_nested_array fd lv typ exp varinfo.vdecl cast_node false g in
             generate_allocs fd t term g
       | TComp (comp, _) ->
-          let lv = (Cil.Var varinfo, Cil.NoOffset) in 
+          let lv = (Cil.Var varinfo, Cil.NoOffset) in
           let (term, g) = make_struct fd lv comp varinfo.vdecl entry g in
           let (term, g) = generate_allocs_field comp.cfields lv fd term g in
           generate_allocs fd t term g
@@ -505,7 +505,7 @@ let rec generate_allocs : Cil.fundec -> Cil.varinfo list -> node -> t -> (node *
 let replace_node_graph : node -> node -> node -> t -> t
 = fun old entry exit g ->
   let preds = pred old g in
-  let succs = succ old g in 
+  let succs = succ old g in
   let g = remove_node old g in
   let g = List.fold_left (fun g p -> add_edge p entry g) g preds in
   let g = List.fold_left (fun g s -> add_edge exit s g) g succs in
@@ -515,33 +515,33 @@ let replace_node_graph : node -> node -> node -> t -> t
 let transform_string_allocs : Cil.fundec -> t -> t
 = fun fd g ->
   let rec replace_str : Cil.exp -> Cil.exp * (Cil.lval * string) list
-  = fun e -> 
+  = fun e ->
     match e with
-      Const (CStr s) -> 
+      Const (CStr s) ->
         let tempinfo = Cil.makeTempVar fd (Cil.TPtr (Cil.TInt (IChar, []), [])) in
-        let temp = (Cil.Var tempinfo, Cil.NoOffset) in 
+        let temp = (Cil.Var tempinfo, Cil.NoOffset) in
           (Lval temp, [(temp, s)])
-    | Lval (Mem exp, off) -> 
+    | Lval (Mem exp, off) ->
         let (exp', l) = replace_str exp in
         (match l with [] -> (e, l) | _ -> (Lval (Mem exp', off), l))
-    | SizeOfStr s -> 
+    | SizeOfStr s ->
         let tempinfo = Cil.makeTempVar fd (Cil.TPtr (Cil.TInt (IChar, []), [])) in
-        let temp = (Cil.Var tempinfo, Cil.NoOffset) in 
+        let temp = (Cil.Var tempinfo, Cil.NoOffset) in
           (Lval temp, [(temp, s)])
-    | SizeOfE exp -> 
+    | SizeOfE exp ->
         let (exp', l) = replace_str exp in
         (match l with [] -> (e, l) | _ -> (SizeOfE exp', l))
     | AlignOfE exp ->
         let (exp', l) = replace_str exp in
         (match l with [] -> (e, l) | _ -> (AlignOfE exp', l))
-    | UnOp (u, exp, t) -> 
+    | UnOp (u, exp, t) ->
         let (exp', l) = replace_str exp in
         (match l with [] -> (e, l) | _ -> (UnOp (u, exp', t), l))
     | BinOp (b, e1, e2, t) ->
         let (e1', l1) = replace_str e1 in
         let (e2', l2) = replace_str e2 in
         (match l1@l2 with [] -> (e, []) | _ -> (BinOp (b, e1', e2', t), l1@l2))
-    | CastE (t, exp) -> 
+    | CastE (t, exp) ->
         let (exp', l) = replace_str exp in
         (match l with [] -> (e, l) | _ -> (CastE (t, exp'), l))
     | _ -> (e, [])
@@ -556,14 +556,14 @@ let transform_string_allocs : Cil.fundec -> t -> t
                     (new_node, g)) (node, g) l
     in
     (* make it consistent with manual encoding in *Sem.ml *)
-    let targets = ["strcpy"; "strcat"; "strncpy"; "memcpy"; "memmove"; "strlen"; "fgets"; 
+    let targets = ["strcpy"; "strcat"; "strncpy"; "memcpy"; "memmove"; "strlen"; "fgets";
                    "sprintf"; "scanf"; "getenv"; "strdup"; "gettext"; "getpwent"; "strchr"; "strrchr" ] in
-    fold_node (fun n g -> 
-      match find_cmd n g with 
+    fold_node (fun n g ->
+      match find_cmd n g with
         Cmd.Cset (lv, e, loc) ->
           (match replace_str e with
             (_, []) -> g
-          | (e, l) -> 
+          | (e, l) ->
             let (empty_node, last_node) = (Node.make (), Node.make ()) in
             let g = add_cmd empty_node Cmd.Cskip g in
             let (node, g) = generate_sallocs l loc empty_node g in
@@ -571,10 +571,10 @@ let transform_string_allocs : Cil.fundec -> t -> t
             let g = add_cmd last_node cmd g in
             let g = add_edge node last_node g in
               replace_node_graph n empty_node last_node g)
-      | Cmd.Cassume (e, loc) -> 
-          (match replace_str e with 
+      | Cmd.Cassume (e, loc) ->
+          (match replace_str e with
             (_, []) -> g
-          | (e, l) -> 
+          | (e, l) ->
             let (empty_node, last_node) = (Node.make (), Node.make ()) in
             let g = add_cmd empty_node Cmd.Cskip g in
             let (node, g) = generate_sallocs l loc empty_node g in
@@ -583,15 +583,15 @@ let transform_string_allocs : Cil.fundec -> t -> t
             let g = add_edge node last_node g in
               replace_node_graph n empty_node last_node g)
         (* do not allocate memory cells for arguments of external lib calls *)
-      | Cmd.Ccall (lv, Cil.Lval (Cil.Var f, Cil.NoOffset), el, loc) 
+      | Cmd.Ccall (lv, Cil.Lval (Cil.Var f, Cil.NoOffset), el, loc)
         when f.vstorage = Cil.Extern && not (List.mem f.vname targets) -> g
-      | Cmd.Ccall (lv, f, el, loc) -> 
-          let (el, l) = List.fold_left (fun (el, l) param -> 
+      | Cmd.Ccall (lv, f, el, loc) ->
+          let (el, l) = List.fold_left (fun (el, l) param ->
               let (e', l') = replace_str param in
               (el@[e'], l@l')) ([], []) el in
-          (match (el, l) with 
+          (match (el, l) with
             (_, []) -> g
-          | (el, l) -> 
+          | (el, l) ->
             let (empty_node, last_node) = (Node.make (), Node.make ()) in
             let g = add_cmd empty_node Cmd.Cskip g in
             let (node, g) = generate_sallocs l loc empty_node g in
@@ -600,9 +600,9 @@ let transform_string_allocs : Cil.fundec -> t -> t
             let g = add_edge node last_node g in
               replace_node_graph n empty_node last_node g)
       | Cmd.Creturn (Some e, loc) ->
-           (match replace_str e with 
+           (match replace_str e with
             (_, []) -> g
-          | (e, l) -> 
+          | (e, l) ->
             let (empty_node, last_node) = (Node.make (), Node.make ()) in
             let g = add_cmd empty_node Cmd.Cskip g in
             let (node, g) = generate_sallocs l loc empty_node g in
@@ -616,12 +616,12 @@ let transform_string_allocs : Cil.fundec -> t -> t
 let transform_allocs : Cil.fundec -> t -> t
 = fun fd g ->
   let rec transform lv exp loc node g =
-    match exp with 
+    match exp with
       BinOp (Mult, SizeOf typ, e, _)
     | BinOp (Mult, e, SizeOf typ, _) ->
       begin
         let typ = Cil.unrollTypeDeep typ in
-        match lv, typ with 
+        match lv, typ with
           (Var v, NoOffset), TComp (_, _) -> (* dynamic struct array alloc *)
             let cmd = Cmd.Calloc (lv, Cmd.Array exp, false, loc) in
             let g = add_cmd node cmd g in
@@ -634,37 +634,37 @@ let transform_allocs : Cil.fundec -> t -> t
     | SizeOf typ | CastE (_, SizeOf typ) ->
       begin
         let typ = Cil.unrollTypeDeep typ in
-        match lv, typ with 
-          (Var v, NoOffset), TComp (comp, _) ->   (* dynamic struct alloc *) 
-            let cast_node = Node.make () in  
+        match lv, typ with
+          (Var v, NoOffset), TComp (comp, _) ->   (* dynamic struct alloc *)
+            let cast_node = Node.make () in
             let cast_cmd = Cmd.Cset (lv, Cil.CastE (Cil.TPtr (typ, []), Cil.Lval lv), loc) in
-            g 
-            |> add_cmd node (Cmd.Calloc (lv, Cmd.Array exp, false, loc)) 
-            |> add_cmd cast_node cast_cmd 
+            g
+            |> add_cmd node (Cmd.Calloc (lv, Cmd.Array exp, false, loc))
+            |> add_cmd cast_node cast_cmd
             |> add_edge node cast_node
             |> generate_allocs_field comp.cfields (Mem (Lval lv), NoOffset) fd cast_node
-        | _, _ -> 
+        | _, _ ->
           let cmd = Cmd.Calloc (lv, Cmd.Array exp, false, loc) in
           let g = add_cmd node cmd g in
             (node, g)
       end
     | SizeOfE e -> transform lv (SizeOf (Cil.typeOf e)) loc node g
-    | e ->  
+    | e ->
       let cmd = Cmd.Calloc (lv, Cmd.Array exp, false, loc) in
       let g = add_cmd node cmd g in
       (node, g)
   in
   fold_node (fun n g ->
-      match find_cmd n g with 
+      match find_cmd n g with
         Cmd.Ccall (Some lv, Lval (Var varinfo, _), args, loc) ->
           if varinfo.vname = "malloc" || varinfo.vname = "__builtin_alloca" then
             let new_node = Node.make () in
-            let preds = pred n g in 
+            let preds = pred n g in
             let succs = succ n g in
-            let g = List.fold_left (fun g s -> remove_edge n s g) g succs in 
-            let g = List.fold_left (fun g p -> remove_edge p n g) g preds in 
+            let g = List.fold_left (fun g s -> remove_edge n s g) g succs in
+            let g = List.fold_left (fun g p -> remove_edge p n g) g preds in
             let g = remove_node n g in
-            let g = List.fold_left (fun g p -> add_edge p new_node g) g preds in 
+            let g = List.fold_left (fun g p -> add_edge p new_node g) g preds in
             let lv = match lv with (Var v, NoOffset) -> (Var { v with vtype = voidPtrType }, NoOffset) | _ -> lv in
             let (term, g) = transform lv (List.hd args) loc new_node g in
               List.fold_left (fun g s -> add_edge term s g) g succs
@@ -673,21 +673,21 @@ let transform_allocs : Cil.fundec -> t -> t
 
 (** for each call-node, insert a corresponding return-node *)
 let insert_return_nodes : t -> t
-=fun g -> 
+=fun g ->
   List.fold_left (fun g c ->
     match find_cmd c g with
-      Cmd.Ccall (_, Lval (Var varinfo, _), _, _) 
-      when varinfo.vname = "exit" || varinfo.vname = "abort" -> 
+      Cmd.Ccall (_, Lval (Var varinfo, _), _, _)
+      when varinfo.vname = "exit" || varinfo.vname = "abort" ->
         let r = returnof c g in
         let n = Node.make () in
         remove_edge c r g
         |> add_cmd n Cmd.Cskip
         |> add_edge c n
-    | Cmd.Ccall (_, _, _, _) -> 
+    | Cmd.Ccall (_, _, _, _) ->
         let r = returnof c g in
         add_new_node c Cmd.Cskip r g
     | _ -> g
-  ) g (nodesof g) 
+  ) g (nodesof g)
 
 (** before each exit-node, insert a return cmd if there is not *)
 let insert_return_before_exit : t -> t
@@ -700,15 +700,15 @@ let insert_return_before_exit : t -> t
   list_fold add_return (pred Node.EXIT g) g
 
 let compute_dom : t -> t
-=fun g -> 
+=fun g ->
   let dom_functions = Dom.compute_all (GDom.fromG g.graph) Node.ENTRY in
-  let dom_tree = 
+  let dom_tree =
     List.fold_left (fun dom_tree node ->
       List.fold_left (fun dom_tree child ->
         G.add_edge dom_tree node child
       ) dom_tree (dom_functions.Dom.dom_tree node)
     ) G.empty (nodesof g) in
-  let dom_fronts = 
+  let dom_fronts =
     List.fold_left (fun dom_fronts node ->
       BatMap.add node (NodeSet.of_list (dom_functions.Dom.dom_frontier node)) dom_fronts
     ) BatMap.empty (nodesof g) in
@@ -717,14 +717,14 @@ let compute_dom : t -> t
 
 let compute_scc : t -> t
 =fun g -> { g with scc_list = Scc.scc_list g.graph }
- 
+
 let rec process_gvardecl : Cil.fundec -> Cil.lval -> Cil.location -> node -> t -> (node * t)
 = fun fd lv loc entry g ->
-  match Cil.unrollTypeDeep (Cil.typeOfLval lv) with 
+  match Cil.unrollTypeDeep (Cil.typeOfLval lv) with
   | TArray (typ, Some exp, _) ->
       let tmp = (Cil.Var (Cil.makeTempVar fd Cil.voidPtrType), Cil.NoOffset) in
       let (term, g) = make_array fd tmp typ exp loc entry g in
-      let cast_node = Node.make () in  
+      let cast_node = Node.make () in
       let cast_cmd = Cmd.Cset (lv, Cil.CastE (Cil.TPtr (typ, []), Cil.Lval tmp), loc) in
       let g = g |> add_cmd cast_node cast_cmd |> add_edge term cast_node in
       let (term, g) = make_nested_array fd lv typ exp loc cast_node true g in
@@ -741,20 +741,20 @@ let rec process_gvardecl : Cil.fundec -> Cil.lval -> Cil.location -> node -> t -
 
 let rec process_init : Cil.fundec -> Cil.lval -> Cil.init -> Cil.location -> node -> t -> (node * t)
 = fun fd lv i loc entry g ->
-  match i with 
+  match i with
     SingleInit exp ->
       let new_node = Node.make () in
       let cmd = Cmd.Cset (lv, exp, loc) in
       let g = add_edge entry new_node (add_cmd new_node cmd g) in
       (new_node, g)
-  | CompoundInit (typ, ilist) -> 
+  | CompoundInit (typ, ilist) ->
       List.fold_left (fun (node, g) (offset, init) ->
           let lv = Cil.addOffsetLval offset lv in
           process_init fd lv init loc node g) (entry, g) ilist
 
 let rec process_gvar : Cil.fundec -> Cil.lval -> Cil.initinfo -> Cil.location -> node -> t -> (node * t)
 = fun fd lv i loc entry g ->
-  match (Cil.typeOfLval lv, i.init) with 
+  match (Cil.typeOfLval lv, i.init) with
     (_, None) -> process_gvardecl fd lv loc entry g     (* e.g., int global;     *)
   | (_, Some (SingleInit exp as init)) ->               (* e.g., int global = 1; *)
       process_init fd lv init loc entry g
@@ -765,8 +765,8 @@ let rec process_gvar : Cil.fundec -> Cil.lval -> Cil.initinfo -> Cil.location ->
 let get_main_dec : Cil.global list -> (Cil.fundec * Cil.location) option
 = fun globals ->
   List.fold_left (fun s g ->
-                  match g with 
-                    Cil.GFun (fundec, loc) 
+                  match g with
+                    Cil.GFun (fundec, loc)
                     when fundec.svar.vname = "main" -> Some (fundec, loc)
                   | _ -> s) None globals
 
@@ -777,13 +777,13 @@ let process_fundecl : Cil.fundec -> Cil.fundec -> Cil.location -> node -> t -> (
   let g = add_edge node new_node (add_cmd new_node cmd g) in
   (new_node, g)
 
-let generate_cmd_args : Cil.fundec -> Cil.location -> t -> node * t 
-= fun fd loc g -> 
+let generate_cmd_args : Cil.fundec -> Cil.location -> t -> node * t
+= fun fd loc g ->
   let (argc, argv) = ((Cil.Var (List.nth fd.sformals 0), Cil.NoOffset), (Cil.Var (List.nth fd.sformals 1), Cil.NoOffset)) in
   let arg_node = Node.make () in
   let arg_cmd = Cmd.Ccall (None, Cil.Lval (Cil.Var (Cil.makeGlobalVar "sparrow_arg" Cil.voidType), Cil.NoOffset), [Cil.Lval argc; Cil.Lval argv], loc) in
-    
-  let (optind, optarg) = 
+
+  let (optind, optarg) =
     ((Cil.Var (Cil.makeGlobalVar "optind" Cil.intType), Cil.NoOffset),
      (Cil.Var (Cil.makeGlobalVar "optarg" Cil.charPtrType), Cil.NoOffset))
   in
@@ -793,49 +793,49 @@ let generate_cmd_args : Cil.fundec -> Cil.location -> t -> node * t
   (opt_node, g)
 
 let init : Cil.fundec -> Cil.location -> t
-=fun fd loc -> 
+=fun fd loc ->
   let entry = Node.fromCilStmt (List.nth fd.sallstmts 0) in
-  let g = 
+  let g =
     (* add nodes *)
-    (list_fold (fun s -> 
+    (list_fold (fun s ->
         add_node_with_cmd (Node.fromCilStmt s) (Cmd.fromCilStmt s.skind)
-      ) fd.sallstmts 
+      ) fd.sallstmts
     >>>
     (* add edges *)
     list_fold (fun stmt ->
-        list_fold (fun succ -> 
+        list_fold (fun succ ->
           add_edge (Node.fromCilStmt stmt) (Node.fromCilStmt succ)
         ) stmt.succs
       ) fd.sallstmts
     ) (empty fd) in
-  let (term, g) = 
+  let (term, g) =
     if fd.svar.vname = "main" && List.length fd.sformals >= 2 then
       generate_cmd_args fd loc g
     else (Node.ENTRY, g)
   in
-  (* generate alloc cmds for static allocations *) 
+  (* generate alloc cmds for static allocations *)
   let (term, g) = generate_allocs fd fd.slocals term g in
   let g = add_edge term entry g in
   let nodes = nodesof g in
-  let lasts = List.filter (fun n -> succ n g = []) nodes in 
+  let lasts = List.filter (fun n -> succ n g = []) nodes in
   g
-  |> list_fold (fun last -> add_edge last Node.EXIT) lasts  
-  |> generate_assumes    
+  |> list_fold (fun last -> add_edge last Node.EXIT) lasts
+  |> generate_assumes
   |> flatten_instructions
-  |> remove_if_loop 
+  |> remove_if_loop
   |> transform_allocs fd           (* generate alloc cmds for dynamic allocations *)
   |> transform_string_allocs fd    (* generate salloc (string alloc) cmds *)
   |> remove_empty_nodes
   |> insert_return_nodes
   |> insert_return_before_exit
 
-let generate_global_proc : Cil.global list -> Cil.fundec -> t 
+let generate_global_proc : Cil.global list -> Cil.fundec -> t
 = fun globals fd ->
   let entry = Node.ENTRY in
-  let (term, g) = 
+  let (term, g) =
     List.fold_left (fun (node, g) x ->
         match x with
-          Cil.GVar (var, init, loc) -> 
+          Cil.GVar (var, init, loc) ->
           process_gvar fd (Cil.var var) init loc node g
         | Cil.GVarDecl (var, loc) -> process_gvardecl fd (Cil.var var) loc node g
         | Cil.GFun (fundec, loc) -> process_fundecl fd fundec loc node g
@@ -848,11 +848,11 @@ let generate_global_proc : Cil.global list -> Cil.fundec -> t
   in
   let call_node = Node.make () in
   let call_cmd = Cmd.Ccall (None, Lval (Var main_dec.svar, NoOffset), [], main_loc) in
-  g 
+  g
   |> add_cmd call_node call_cmd
   |> add_edge term call_node
   |> add_edge call_node Node.EXIT
-  |> generate_assumes 
+  |> generate_assumes
   |> flatten_instructions
   |> remove_if_loop
   |> transform_string_allocs fd        (* generate salloc (string alloc) cmds *)
@@ -873,27 +873,27 @@ let unreachable_node : t -> NodeSet.t
       else remove_reachable_node' work acc in
   remove_reachable_node' (NodeSet.singleton Node.ENTRY) all_nodes
 
-let merge_vertex g vl = 
-  { g with graph = Merge.merge_vertex g.graph vl } 
+let merge_vertex g vl =
+  { g with graph = Merge.merge_vertex g.graph vl }
   |> remove_edge (List.hd vl) (List.hd vl)
 
 let rec collect g n lval node_list exp_list =
-  let s = succ n g |> List.hd in 
-  match (find_cmd n g, find_cmd s g) with 
-    Cmd.Csalloc (_, str, _), Cmd.Cset (l, e, _) -> 
+  let s = succ n g |> List.hd in
+  match (find_cmd n g, find_cmd s g) with
+    Cmd.Csalloc (_, str, _), Cmd.Cset (l, e, _) ->
     begin
-      match Cil.removeOffsetLval l with 
-        (l, Cil.Index (i, Cil.NoOffset)) when CilHelper.eq_lval lval l && Cil.isConstant i -> 
+      match Cil.removeOffsetLval l with
+        (l, Cil.Index (i, Cil.NoOffset)) when CilHelper.eq_lval lval l && Cil.isConstant i ->
           let node_list, exp_list = n::s::node_list, (Cil.mkString str)::exp_list in
           let ss = succ s g in
           if List.length ss = 1 then collect g (List.hd ss) lval node_list exp_list
           else (node_list, exp_list)
       | _ -> (node_list, exp_list)
     end
-  | Cmd.Cset (l, e, _), _ when Cil.isConstant e -> 
+  | Cmd.Cset (l, e, _), _ when Cil.isConstant e ->
     begin
-      match Cil.removeOffsetLval l with 
-        (l, Cil.Index (i, Cil.NoOffset)) when CilHelper.eq_lval lval l && Cil.isConstant i -> 
+      match Cil.removeOffsetLval l with
+        (l, Cil.Index (i, Cil.NoOffset)) when CilHelper.eq_lval lval l && Cil.isConstant i ->
           let node_list, exp_list = n::node_list, e::exp_list in
           let ss = succ n g in
           if List.length ss = 1 then collect g (List.hd ss) lval node_list exp_list
@@ -902,32 +902,32 @@ let rec collect g n lval node_list exp_list =
     end
   | _ -> (node_list, exp_list)
 
-let is_candidate n g = 
-  let is_starting_point lval = 
-    match Cil.removeOffsetLval lval with 
+let is_candidate n g =
+  let is_starting_point lval =
+    match Cil.removeOffsetLval lval with
       (l, Cil.Index (i, Cil.NoOffset)) when Cil.isZero i -> Some l
     | _ -> None
   in
-  let ss = try succ n g with _ -> [] in 
-  if List.length ss = 1 then 
-    let s = List.hd ss in 
-    match find_cmd n g, find_cmd s g with 
-      Cmd.Csalloc (_, _, _), Cmd.Cset (lval, e, _) when Cil.isPointerType (Cil.typeOf e) -> 
+  let ss = try succ n g with _ -> [] in
+  if List.length ss = 1 then
+    let s = List.hd ss in
+    match find_cmd n g, find_cmd s g with
+      Cmd.Csalloc (_, _, _), Cmd.Cset (lval, e, _) when Cil.isPointerType (Cil.typeOf e) ->
         is_starting_point lval
     | Cmd.Cset (lval, e, _), _ when Cil.isIntegralType (Cil.typeOf e) ->
         is_starting_point lval
     | _ -> None
   else None
- 
-(* arr[0] = c0; arr[1] = c1; ..., arr[n] = cn; => sparrow_array_init(arr,c0, c1, ..., cn); 
+
+(* arr[0] = c0; arr[1] = c1; ..., arr[n] = cn; => sparrow_array_init(arr,c0, c1, ..., cn);
    salloc(arr[0], x0); x0 = s0; ..., => sparrow_array_init(arr, s0, s1, ..., sn) *)
 let optimize_array_init : t -> t
-= fun g -> 
+= fun g ->
   fold_node (fun n g ->
-      match is_candidate n g with 
-        Some lval -> 
+      match is_candidate n g with
+        Some lval ->
           let (nodes, exps) = collect g n lval [] [] in
-          if List.length nodes > 1 then 
+          if List.length nodes > 1 then
             let new_node = Node.make () in
             let g = merge_vertex g (new_node::nodes) in
             let args = (Cil.Lval lval)::(List.rev exps) in
@@ -944,24 +944,24 @@ let print_dot : out_channel -> t -> unit
 =fun chan g ->
   fprintf chan "digraph %s {\n" g.fd.svar.vname;
   fprintf chan "{\n";
-  fprintf chan 
+  fprintf chan
     "node [shape=box]\n";
   G.iter_vertex (fun v ->
-    fprintf chan 
-      "%s [label=\"%s: %s\" %s]\n" 
-      (Node.to_string v) 
+    fprintf chan
+      "%s [label=\"%s: %s\" %s]\n"
+      (Node.to_string v)
       (Node.to_string v)
       (Cmd.to_string (find_cmd v g))
       (if is_callnode v g then "style=filled color=grey"
        else "")
   ) g.graph;
   fprintf chan "}\n";
-  G.iter_edges (fun v1 v2 -> 
+  G.iter_edges (fun v1 v2 ->
       fprintf chan "%s -> %s\n" (Node.to_string v1) (Node.to_string v2)
   ) g.graph;
   fprintf chan "}\n"
 
-let print_dom_fronts dom_fronts = 
+let print_dom_fronts dom_fronts =
   BatMap.iter (fun node fronts ->
     prerr_string (Node.to_string node ^ ": ");
     NodeSet.iter (fun fr -> prerr_string (Node.to_string fr ^ " "))
@@ -969,23 +969,23 @@ let print_dom_fronts dom_fronts =
     prerr_endline ""
   ) dom_fronts
 
-let print_dom_tree dom_tree = 
+let print_dom_tree dom_tree =
   prerr_endline (string_of_map Node.to_string Node.to_string dom_tree)
- 
+
 module Json = Yojson.Safe
 
 let to_json : t -> Json.json
 = fun g ->
-  let nodes = `Assoc (G.fold_vertex (fun v nodes -> 
-              (Node.to_string v, 
+  let nodes = `Assoc (G.fold_vertex (fun v nodes ->
+              (Node.to_string v,
                 `List [
-                  `String (Cmd.to_string (find_cmd v g)); 
+                  `String (Cmd.to_string (find_cmd v g));
                   `Bool false;
                   `Bool (is_callnode v g)])::nodes) g.graph [])
   in
   let edges = `List (G.fold_edges (fun v1 v2 edges ->
-              (`List [`String (Node.to_string v1); 
+              (`List [`String (Node.to_string v1);
                       `String (Node.to_string v2)
                      ])::edges) g.graph []) in
-  `Assoc [("nodes", nodes); 
+  `Assoc [("nodes", nodes);
           ("edges", edges)]

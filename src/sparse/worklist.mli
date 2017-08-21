@@ -10,7 +10,7 @@
 (***********************************************************************)
 (** Worklist *)
 
-module type S = 
+module type S =
 sig
   module DUGraph : Dug.S
   type t

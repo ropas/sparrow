@@ -16,7 +16,7 @@ open AbsSem
 open Access
 open ItvDom
 
-module type S = 
+module type S =
 sig
   module Dom : InstrumentedMem.S
   module Loc : AbsDom.SET
@@ -34,19 +34,19 @@ struct
   module Dom = Sem.Dom
   module LocMap = Access.LocMap
   let init_access : Global.t -> PowLoc.t -> Dom.t -> (Node.t -> Dom.t * Global.t -> Dom.t * Global.t) -> Access.t
-  =fun global locset mem f -> 
+  =fun global locset mem f ->
     let nodes = InterCfg.nodesof global.icfg in
-    let initial = 
+    let initial =
         list_fold (fun node ->
           Access.add_node node (Sem.accessof ~locset global node f mem)
        )  nodes Access.empty
     in
     let abslocs = Access.fold (fun _ access acc ->
         PowLoc.union_small_big (Access.Info.useof access) acc
-        |> PowLoc.union_small_big (Access.Info.defof access)) initial PowLoc.empty 
+        |> PowLoc.union_small_big (Access.Info.defof access)) initial PowLoc.empty
     in
     Access.add_total_abslocs abslocs initial
-  
+
   let init_access_proc : Access.t -> Access.t
   =fun access ->
     let add_access_node node access m =
@@ -57,14 +57,14 @@ struct
   = fun pids callgraph access ->
     list_fold (fun pid ->
         let trans = CallGraph.trans_callees pid callgraph in
-        let info = 
-          Access.Info.empty 
-          |> PowProc.fold (fun callee -> 
+        let info =
+          Access.Info.empty
+          |> PowProc.fold (fun callee ->
                Access.Info.union (Access.find_proc callee access)) trans
           |> Access.Info.union (Access.find_proc pid access)
         in
         Access.add_proc_reach pid info) pids access
- 
+
   let init_access_proc_reach_wo_local : InterCfg.pid list -> CallGraph.t
     -> Access.t -> Access.t
   = fun pids callgraph access ->
@@ -96,7 +96,7 @@ struct
 
   let init_access_program_local : Access.t -> Access.t
   =fun access ->
-    let local = Access.fold_proc_local 
+    let local = Access.fold_proc_local
         (fun _ local acc -> PowLoc.union acc local) access PowLoc.empty in
     Access.add_program_local local access
 

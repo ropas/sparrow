@@ -12,7 +12,7 @@ open Vocab
 open AbsDom
 open BasicDom
 
-module type S = 
+module type S =
 sig
   module Loc : SET
   module PowLoc : PowDom.CPO with type elt = Loc.t
@@ -75,12 +75,12 @@ sig
   val restrict_access : t -> PowLoc.t -> t
 end
 
-module Make(Dom: MapDom.CPO) = 
+module Make(Dom: MapDom.CPO) =
 struct
   module PowLoc = Dom.PowA
   module Loc = Dom.A
 
-  module Info = 
+  module Info =
   struct
     type kind = DEF | USE | ALL
     type t = {
@@ -105,7 +105,7 @@ struct
 
     let singleton : kind -> Loc.t -> t
     = fun m a -> add m a empty
-   
+
     let mem : Loc.t -> t -> bool
     = fun l a ->
       (PowLoc.mem l a.def) || (PowLoc.mem l a.use)
@@ -115,11 +115,11 @@ struct
       {
         use = PowLoc.remove a info.use;
         def = PowLoc.remove a info.def;
-      } 
+      }
 
     let remove_set : PowLoc.t -> t -> t
     = fun addrs info ->
-      { 
+      {
         use = PowLoc.diff info.use addrs;
         def = PowLoc.diff info.def addrs;
       }
@@ -134,7 +134,7 @@ struct
 
     let from_set : kind -> PowLoc.t -> t
     = fun m aset -> add_set m aset empty
-  
+
     let add_list : kind -> Loc.t list -> t -> t
     = fun m alist info -> list_fold (add m) alist info
 
@@ -148,25 +148,25 @@ struct
     = fun l -> l.def
 
     let union : t -> t -> t
-    = fun l1 l2 -> 
+    = fun l1 l2 ->
       {
         use = PowLoc.union l1.use l2.use;
         def = PowLoc.union l1.def l2.def
       }
 
     let diff : t -> t -> PowLoc.t
-    = fun l1 l2 -> 
+    = fun l1 l2 ->
       PowLoc.diff (accessof l1) (accessof l2)
 
     let restrict : PowLoc.t -> t -> t
-    = fun addrs l -> 
+    = fun addrs l ->
       {
         use = PowLoc.inter l.use addrs;
         def = PowLoc.inter l.def addrs
       }
 
     let filter_out : PowLoc.t -> t -> t
-    = fun addrs l -> 
+    = fun addrs l ->
       {
         use = PowLoc.diff l.use addrs;
         def = PowLoc.diff l.def addrs
@@ -246,47 +246,47 @@ struct
   =fun x t -> try LocMap.find x t.def_nodes with _ -> PowNode.empty
 
   let find_use_nodes : Loc.t -> t -> PowNode.t
-  =fun x t -> try LocMap.find x t.use_nodes with _ -> PowNode.empty 
+  =fun x t -> try LocMap.find x t.use_nodes with _ -> PowNode.empty
 
   let find_single_defs : t -> PowLoc.t
-  =fun t -> 
-    LocMap.fold (fun loc nodes -> 
+  =fun t ->
+    LocMap.fold (fun loc nodes ->
       if PowNode.cardinal nodes = 1 then PowLoc.add loc else id
     ) t.def_nodes PowLoc.empty
 
   let restrict_access : t -> PowLoc.t -> t
-  =fun t locs ->  
-    { t with access = 
+  =fun t locs ->
+    { t with access =
         NodeMap.fold (fun node access ->
-          NodeMap.add node (Info.restrict locs access) 
+          NodeMap.add node (Info.restrict locs access)
         ) t.access NodeMap.empty }
 
-  let add_node node info access = 
+  let add_node node info access =
     { access with access = NodeMap.add node info access.access }
 
-  let add_proc pid info access = 
+  let add_proc pid info access =
     { access with access_proc = ProcMap.modify_def Info.empty pid
       (Info.union info) access.access_proc }
 
-  let add_proc_reach pid info access = 
+  let add_proc_reach pid info access =
     { access with access_proc_reach = ProcMap.add pid info access.access_proc_reach }
 
-  let add_proc_reach_wo_local pid info access = 
+  let add_proc_reach_wo_local pid info access =
     { access with access_proc_reach_wo_local = ProcMap.add pid info access.access_proc_reach_wo_local }
 
-  let add_proc_local pid loc access = 
-    { access with access_proc_local = ProcMap.modify_def PowLoc.empty pid 
+  let add_proc_local pid loc access =
+    { access with access_proc_local = ProcMap.modify_def PowLoc.empty pid
       (PowLoc.add loc) access.access_proc_local }
 
-  let add_program_local access_program_local access = 
+  let add_program_local access_program_local access =
     { access with access_program_local }
 
-  let add_def_nodes x nodes access = 
+  let add_def_nodes x nodes access =
     { access with def_nodes = LocMap.add x nodes access.def_nodes }
 
-  let add_use_nodes x nodes access = 
+  let add_use_nodes x nodes access =
     { access with use_nodes = LocMap.add x nodes access.use_nodes }
-   
+
   let add_total_abslocs total_abslocs access = { access with total_abslocs }
   let fold f access a = NodeMap.fold f access.access a
   let fold_proc f access a = ProcMap.fold f access.access_proc a

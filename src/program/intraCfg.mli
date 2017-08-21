@@ -19,20 +19,20 @@ end
 module NodeSet : BatSet.S with type elt = Node.t
 
 module Cmd : sig
-  type t = 
-  | Cinstr of Cil.instr list 
-  | Cif of Cil.exp * Cil.block * Cil.block * Cil.location 
+  type t =
+  | Cinstr of Cil.instr list
+  | Cif of Cil.exp * Cil.block * Cil.block * Cil.location
   | CLoop of Cil.location
   (* final graph has the following cmds only *)
   | Cset of Cil.lval * Cil.exp * Cil.location
-  | Cexternal of Cil.lval * Cil.location 
+  | Cexternal of Cil.lval * Cil.location
   | Calloc of Cil.lval * alloc * static * Cil.location
   | Csalloc of Cil.lval * string * Cil.location
   | Cfalloc of Cil.lval * Cil.fundec * Cil.location
   | Cassume of Cil.exp * Cil.location
-  | Ccall of Cil.lval option * Cil.exp * Cil.exp list * Cil.location 
+  | Ccall of Cil.lval option * Cil.exp * Cil.exp list * Cil.location
   | Creturn of Cil.exp option * Cil.location
-  | Casm of Cil.attributes * string list * 
+  | Casm of Cil.attributes * string list *
             (string option * string * Cil.lval) list *
             (string option * string * Cil.exp) list *
             string list * Cil.location
@@ -50,17 +50,17 @@ and node = Node.t
 and cmd = Cmd.t
 
 val init : Cil.fundec -> Cil.location -> t
-val generate_global_proc : Cil.global list -> Cil.fundec -> t 
+val generate_global_proc : Cil.global list -> Cil.fundec -> t
 
 val get_pid : t -> string
 val get_formals : t -> Cil.varinfo list
-val get_scc_list : t -> node list list 
+val get_scc_list : t -> node list list
 
 val nodesof : t -> node list
 val entryof : t -> node
 val exitof : t -> node
 val callof : node -> t -> node
-val returnof : node -> t -> node 
+val returnof : node -> t -> node
 
 val is_entry : node -> bool
 val is_exit : node -> bool

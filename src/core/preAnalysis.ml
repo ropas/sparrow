@@ -20,7 +20,7 @@ let onestep_transfer : Node.t list -> Mem.t * Global.t -> Mem.t * Global.t
 =fun nodes (mem,global) ->
   list_fold (fun node (mem,global) ->
     ItvSem.run AbsSem.Weak ItvSem.Spec.empty node (mem,global)
-  ) nodes (mem,global) 
+  ) nodes (mem,global)
 
 let rec fixpt : Node.t list -> int -> Mem.t * Global.t -> Mem.t * Global.t
 =fun nodes k (mem,global) ->
@@ -43,7 +43,7 @@ let callees_of : InterCfg.t -> InterCfg.Node.t -> Mem.t -> PowProc.t
 
 let draw_call_edges : InterCfg.Node.t list -> Mem.t -> Global.t -> Global.t
 = fun nodes mem global ->
-  let icfg = 
+  let icfg =
     List.fold_left (fun icfg node ->
         if InterCfg.is_callnode node icfg then
           let callees = callees_of icfg node mem in
@@ -61,13 +61,13 @@ let draw_callgraph : Node.t list -> Mem.t -> Global.t -> Global.t
     global.callgraph nodes
     |> CallGraph.compute_trans_calls
   in
-  { global with callgraph = callgraph } 
+  { global with callgraph = callgraph }
 
 let perform : Global.t -> Global.t
 = fun global ->
   let nodes = InterCfg.nodesof global.icfg in
   let (mem, global) = fixpt nodes 1 (Mem.bot,global) in
-  my_prerr_endline ("mem size : " ^ i2s (Mem.cardinal mem)); 
+  my_prerr_endline ("mem size : " ^ i2s (Mem.cardinal mem));
   { global with mem = mem }
   |> draw_call_edges nodes mem
   |> draw_callgraph nodes mem

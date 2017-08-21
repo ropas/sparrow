@@ -13,7 +13,7 @@ open ProdDom
 open BasicDom
 open Vocab
 
-module Struct = 
+module Struct =
 struct
   include String
   let to_string = id
@@ -29,7 +29,7 @@ let make : PowLoc.t -> Cil.compinfo -> t
   PowLoc.fold (fun l ->
     add l (PowStruct.singleton s.Cil.cname)) ploc bot
 
-let append_field : t -> Cil.fieldinfo -> PowLoc.t 
+let append_field : t -> Cil.fieldinfo -> PowLoc.t
 = fun s f ->
   foldi (fun loc info ->
       if PowStruct.mem f.Cil.fcomp.Cil.cname info then
@@ -39,7 +39,7 @@ let append_field : t -> Cil.fieldinfo -> PowLoc.t
 let pow_loc_of_struct : t -> PowLoc.t = fun str ->
   foldi (fun k _ -> PowLoc.add k) str PowLoc.bot
 
-let extern () = 
+let extern () =
   if !Options.top_location then top
   else bot
 

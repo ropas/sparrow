@@ -19,7 +19,7 @@ sig
   val pp : Format.formatter -> t -> unit
 end
 
-module type HASHABLE_SET = 
+module type HASHABLE_SET =
 sig
   include SET
   val equal     : t -> t -> bool
@@ -27,7 +27,7 @@ sig
 end
 
 (** Signature of CPO *)
-module type CPO = 
+module type CPO =
 sig
   include SET
 

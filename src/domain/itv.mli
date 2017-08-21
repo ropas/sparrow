@@ -27,7 +27,7 @@ val open_right  : t -> bool
 val close_left  : t -> bool
 
 val of_int      : int -> t
-val of_ints     : int -> int -> t 
+val of_ints     : int -> int -> t
 val of_integer  : Integer.t -> Integer.t -> t
 
 (** {2 Basic Values } *)
@@ -52,7 +52,7 @@ val upper_integer : t -> Integer.t
 val plus        : t -> t -> t
 val minus       : t -> t -> t
 val times       : t -> t -> t
-val divide      : t -> t -> t 
+val divide      : t -> t -> t
 val absolute    : t -> t
 val unknown_binary : t -> t -> t
 val unknown_unary : t -> t

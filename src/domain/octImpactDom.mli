@@ -32,7 +32,7 @@ module Mem : sig
 end with type A.t = OctDom.Pack.t and type B.t = AbsOct.t and type PowA.t = OctDom.PackConf.t
 
 module Relation : sig
-  type t 
+  type t
   val empty : t
   val add_edge : OctDom.OctLoc.t -> OctDom.OctLoc.t -> t -> t
   val add_absoct : AbsOct.t -> t -> t
