@@ -39,6 +39,7 @@ val extract_lib_feat : bool ref
 val top_location : bool ref
 val bugfinder :  int ref
 val unsound_recursion : bool ref
+val unsound_alloc : bool ref
 
 (** {2 Main Analysis } *)
 

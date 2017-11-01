@@ -1,0 +1,25 @@
+unsound_alloc.c 
+To inline : [xmalloc4;xmalloc3;xmalloc2;xmalloc1]
+Excluded variable-arguments functions : []
+Excluded recursive functions : []
+Excluded too large functions : []
+-inline xmalloc1 @unsound_alloc.c:30
+-inline xmalloc1 @unsound_alloc.c:31
+-inline xmalloc2 @unsound_alloc.c:34
+-inline xmalloc2 @unsound_alloc.c:35
+-inline xmalloc3 @unsound_alloc.c:38
+-inline xmalloc3 @unsound_alloc.c:39
+-inline xmalloc4 @unsound_alloc.c:42
+-inline xmalloc4 @unsound_alloc.c:43
+#Procs : 6
+#Nodes : 84
+#Nodes in def-use graph : 66
+#Locs on def-use graph : 53
+
+= Alarms =
+
+#queries                 : 4
+#queries mod alarm point : 4
+#proven                  : 4
+#unproven                : 0
+#bot-involved            : 0

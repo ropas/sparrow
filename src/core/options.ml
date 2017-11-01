@@ -49,6 +49,7 @@ let extract_loop_feat = ref false
 let extract_lib_feat = ref false
 let top_location = ref false
 let unsound_recursion = ref false
+let unsound_alloc = ref false
 let bugfinder = ref 0
 
 (* Alarm Report *)
@@ -98,6 +99,7 @@ let opts =
   ("-unsound_loop", (Arg.String (fun s -> unsound_loop := BatSet.add s !unsound_loop)), "Unsound loops");
   ("-unsound_lib", (Arg.String (fun s -> unsound_lib := BatSet.add s !unsound_lib)), "Unsound libs");
   ("-unsound_recursion", (Arg.Set unsound_recursion), "Unsound recursive calls");
+  ("-unsound_alloc", (Arg.Set unsound_alloc), "Unsound memory allocation (never return null)");
   ("-extract_loop_feat", (Arg.Set extract_loop_feat), "Extract features of loops for harmless unsoundness");
   ("-extract_lib_feat", (Arg.Set extract_lib_feat), "Extract features of libs for harmless unsoundness");
   ("-top_location", (Arg.Set top_location), "Treat unknown locations as top locations");

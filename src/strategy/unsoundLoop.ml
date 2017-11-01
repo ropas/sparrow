@@ -650,7 +650,7 @@ let get_harmless_loops : Global.t -> loop BatSet.t
     Lymp.close py;
     set
 
-let dissolve : Global.t -> bool
+let transform : Global.t -> bool
 = fun global ->
   let target_loops = BatSet.union (get_harmless_loops global) !Options.unsound_loop in
   let vis = new loopRemoveVisitor target_loops in
