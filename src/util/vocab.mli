@@ -19,6 +19,7 @@ val id : 'a -> 'a
 val flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c
 val cond : bool -> ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b
 val opt : bool -> ('a -> 'a) -> 'a -> 'a
+val case : (bool * ('a -> 'b)) list -> ('a -> 'b) -> 'a -> 'b
 val tuple : 'a -> 'a * 'a
 
 val compare_string : string -> string -> int

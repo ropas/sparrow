@@ -27,6 +27,7 @@ type query = {
   exp : AlarmExp.t;
   loc : Cil.location;
   allocsite : Allocsite.t option;
+  src : (InterCfg.node * Cil.location) option;
   status : status;
   desc : string
 }

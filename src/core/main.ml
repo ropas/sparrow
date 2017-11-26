@@ -68,6 +68,10 @@ let octagon_analysis (global,itvinputof,_,_) =
   StepManager.stepf true "Oct Sparse Analysis" OctAnalysis.do_analysis (global,itvinputof)
   |> (fun (global,_,_,alarm) -> (global, alarm))
 
+let taint_analysis (global,itvinputof,_,_) =
+  StepManager.stepf true "Taint Sparse Analysis" TaintAnalysis.do_analysis (global,itvinputof)
+  |> (fun (global,_,_,alarm) -> (global, alarm))
+
 let extract_feature : Global.t -> Global.t
 = fun global ->
   if !Options.extract_loop_feat then
@@ -102,7 +106,8 @@ let main () =
     |> opt !Options.cfg print_cfg
     |> extract_feature
     |> StepManager.stepf true "Itv Sparse Analysis" ItvAnalysis.do_analysis
-    |> cond !Options.oct octagon_analysis (fun (global,_,_,alarm) -> (global, alarm))
+    |> case [ (!Options.oct, octagon_analysis);
+              (!Options.taint, taint_analysis) ] (fun (global,_,_,alarm) -> (global, alarm))
     |> (fun (global, alarm) -> Report.print global alarm)
     |> finish t0
   with exc ->

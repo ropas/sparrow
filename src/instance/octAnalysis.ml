@@ -77,33 +77,33 @@ let inspect_aexp : PackConf.t -> InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t ->
       let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e ptrmem in
       check packconf pid v1 (Some v2) (Some e) ptrmem mem
       |> List.map (fun (status,a,desc) -> { node = node; exp = aexp; loc = loc;
-          allocsite = a; status = status; desc = desc })
+          allocsite = a; status = status; desc = desc; src = None })
   | DerefExp (Cil.BinOp (op, e1, e2, _) ,loc) when op = Cil.PlusPI || op = Cil.IndexPI ->
       let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
       let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
       check packconf pid v1 (Some v2) (Some e2) ptrmem mem
       |> List.map (fun (status,a,desc) -> { node = node; exp = aexp; loc = loc; allocsite = a;
-        status = status; desc = desc })
+        status = status; desc = desc; src = None })
   | DerefExp (e,loc) ->
       let v = ItvSem.eval (InterCfg.Node.get_pid node) e ptrmem in
       check packconf pid v None None ptrmem mem
       |> cond (ItvDom.Val.eq ItvDom.Val.bot v)
           (List.map (fun (status,a,desc) -> { node = node; exp = aexp; loc = loc; allocsite = a;
-                     status = status; desc = desc }))
+                     status = status; desc = desc; src = None }))
           (List.map (fun (status,a,desc) ->
                      if status = Report.BotAlarm then
                         { node = node; exp = aexp; loc = loc; allocsite = a; status = Proven;
-                          desc = "valid pointer dereference" }
+                          desc = "valid pointer dereference"; src = None }
                      else
                         { node = node; exp = aexp; loc = loc; allocsite = a; status = status;
-                          desc = desc }))
+                          desc = desc; src = None }))
   | Strcpy (e1, e2, loc) ->
       let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
       let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
       let v2 = ItvDom.Val.of_itv (ArrayBlk.nullof (ItvDom.Val.array_of_val v2)) in
       check packconf pid v1 (Some v2) None ptrmem mem
       |> List.map (fun (status,a,desc) ->
-          { node = node; exp = aexp; loc = loc; allocsite = a; status = status; desc = desc })
+          { node = node; exp = aexp; loc = loc; allocsite = a; status = status; desc = desc; src = None })
     | Strcat (e1, e2, loc) ->
         let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
         let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
@@ -112,7 +112,7 @@ let inspect_aexp : PackConf.t -> InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t ->
         let np = ItvDom.Val.of_itv (Itv.plus np1 np2) in
         check packconf pid v1 (Some np) None ptrmem mem
         |> List.map (fun (status,a,desc) ->
-            { node = node; exp = aexp; loc = loc; allocsite = a; status = status; desc = desc })
+            { node = node; exp = aexp; loc = loc; allocsite = a; status = status; desc = desc; src = None })
     | Strncpy (e1, e2, e3, loc)
     | Memcpy (e1, e2, e3, loc)
     | Memmove (e1, e2, e3, loc) ->
@@ -124,7 +124,7 @@ let inspect_aexp : PackConf.t -> InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t ->
         let lst2 = check packconf pid v2 (Some v3) (Some e2) ptrmem mem in
         (lst1@lst2)
         |> List.map (fun (status,a,desc) ->
-            { node = node; exp = aexp; loc = loc; allocsite = a; status = status; desc = desc })
+            { node = node; exp = aexp; loc = loc; allocsite = a; status = status; desc = desc; src = None })
   | _ -> []) @ queries
 
 let inspect_alarm : Global.t -> Spec.t -> Table.t -> Report.query list

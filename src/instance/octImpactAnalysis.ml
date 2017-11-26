@@ -69,27 +69,27 @@ let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t
       |> List.map (fun (status,a,desc) ->
         match status with
           Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a;
-                      status = Proven; desc = desc }, status)
+                      status = Proven; desc = desc; src = None }, status)
         | None -> ({node = node; exp = aexp; loc= loc; allocsite = a;
-                    status = UnProven; desc = desc }, status))
+                    status = UnProven; desc = desc; src = None }, status))
   | DerefExp ((Cil.BinOp (op, e1, e2, _)) as e,loc) when op = Cil.PlusPI || op = Cil.IndexPI ->
       let v = ItvSem.eval (InterCfg.Node.get_pid node) e ptrmem in
       check pid v None (Some e2) ptrmem mem
       |> List.map (fun (status,a,desc) ->
         match status with
           Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a;
-                      status = Proven; desc = desc }, status)
+                      status = Proven; desc = desc; src = None }, status)
         | None -> ({node = node; exp = aexp; loc= loc; allocsite = a;
-                    status = UnProven; desc = desc }, status))
+                    status = UnProven; desc = desc; src = None }, status))
   | DerefExp (e,loc) -> (* dummy *)
       let v = ItvSem.eval (InterCfg.Node.get_pid node) e ptrmem in
       check pid v None None ptrmem mem
       |> List.map (fun (status,a,desc) ->
         match status with
           Some p -> ({node = node; exp = aexp; loc= loc; allocsite = a;
-                      status = Proven; desc = desc }, status)
+                      status = Proven; desc = desc; src = None }, status)
         | None -> ({node = node; exp = aexp; loc= loc; allocsite = a;
-                    status = UnProven; desc = desc }, status))
+                    status = UnProven; desc = desc; src = None }, status))
   | Strcpy (e1, e2, loc) ->
       let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
       let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
@@ -98,9 +98,9 @@ let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t
       |> List.map (fun (status,a,desc) ->
         match status with
           Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
-                       status = Proven; desc = desc }, status)
+                       status = Proven; desc = desc; src = None }, status)
         | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
-                     status = UnProven; desc = desc }, status))
+                     status = UnProven; desc = desc; src = None }, status))
     | Strcat (e1, e2, loc) ->
         let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 ptrmem in
         let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 ptrmem in
@@ -111,9 +111,9 @@ let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t
         |> List.map (fun (status,a,desc) ->
           match status with
             Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
-                         status = Proven; desc = desc }, status)
+                         status = Proven; desc = desc; src = None }, status)
           | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
-                       status = UnProven; desc = desc }, status))
+                       status = UnProven; desc = desc; src = None }, status))
     | Strncpy (e1, e2, e3, loc)
     | Memcpy (e1, e2, e3, loc)
     | Memmove (e1, e2, e3, loc) ->
@@ -127,9 +127,9 @@ let inspect_aexp : InterCfg.node -> AlarmExp.t -> ItvDom.Mem.t -> Mem.t
         |> List.map (fun (status,a,desc) ->
             match status with
               Some p -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
-                           status = Proven; desc = desc }, status)
+                           status = Proven; desc = desc; src = None }, status)
             | None -> ({ node = node; exp = aexp; loc = loc; allocsite = a;
-                         status = UnProven; desc = desc }, status))
+                         status = UnProven; desc = desc; src = None }, status))
   | _ -> []) @ queries
 
 let display_alarms title alarms_part =

@@ -25,7 +25,7 @@ struct
   let pow_proc_of_val : t -> PowProc.t = fifth
   let allocsites_of_val : t -> Allocsite.t BatSet.t
   = fun v -> v |> array_of_val |> ArrayBlk.allocsites_of_array
-
+  let all_loc_of_val (_,p,a,_,_) = PowLoc.join p (ArrayBlk.pow_loc_of_array a)
   let of_itv : Itv.t -> t = fun x ->
     (x, PowLoc.bot, ArrayBlk.bot, StructBlk.bot, PowProc.bot)
   let of_pow_loc : PowLoc.t -> t = fun x ->

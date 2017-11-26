@@ -36,6 +36,9 @@ let oct = ref false
 let pack_impact = ref true
 let pack_manual = ref false
 
+(* Taint Analysis *)
+let taint = ref false
+
 (* Analyzer *)
 let nobar = ref false
 let narrow = ref false
@@ -73,6 +76,7 @@ let marshal_dir = ref "marshal"
 (* Debug *)
 let debug = ref false
 let oct_debug = ref false
+let taint_debug = ref false
 
 (* ETC *)
 let print_premem = ref false
@@ -88,6 +92,7 @@ let opts =
   ("-verbose", (Arg.Int (fun x -> verbose := x)), "Verbose level (default: 1)");
   ("-debug", (Arg.Set debug), "Print debug information");
   ("-oct_debug", (Arg.Set oct_debug), "Print debug information for octagon analysis");
+  ("-taint_debug", (Arg.Set taint_debug), "Print debug information for taint analysis");
   ("-pack_impact", (Arg.Set pack_impact), "Packing by impact pre-analysis");
   ("-pack_manual", (Arg.Set pack_manual), "Pacing by manual annotation");
   ("-nd", (Arg.Set nd), "Print Null-dereference alarms");
@@ -99,6 +104,7 @@ let opts =
   ("-pfs", (Arg.Int (fun x -> pfs := x)), "Partial flow-sensitivity -pfs [0-100] (0: flow-insensitive, 100: fully flow-sensitive). default=100");
   ("-pfs_wv", (Arg.String (fun s -> pfs_wv := s)), "Weight vector for flow-sensitivity (e.g., \"0 1 -1 ... \"). Unspecified weights are zeros.");
   ("-oct", (Arg.Set oct), "Do octagon analysis");
+  ("-taint", (Arg.Set taint), "Do taint analysis");
   ("-profile", (Arg.Set profile), "Profiler");
   ("-narrow", (Arg.Set narrow), "Do narrowing");
   ("-unsound_loop", (Arg.String (fun s -> unsound_loop := BatSet.add s !unsound_loop)), "Unsound loops");

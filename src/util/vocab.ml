@@ -19,6 +19,11 @@ let id x = x
 let flip f = fun y x -> f x y
 let cond c f g x = if c then f x else g x
 let opt c f x = if c then f x else x
+let rec case cases default x =
+  match cases with
+  | (cond, f) :: t when cond -> f x
+  | (_, _) :: t -> case t default x
+  | [] -> default x
 let tuple x = (x, x)
 
 let compare_string = Base.compare_string

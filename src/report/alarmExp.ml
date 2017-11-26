@@ -21,6 +21,7 @@ type t =
   | Strncpy of exp * exp * exp * location
   | Memcpy of exp * exp * exp * location
   | Memmove of exp * exp * exp * location
+  | AllocSize of exp * location
 
 let to_string t =
   match t with
@@ -32,6 +33,7 @@ let to_string t =
   | Memcpy (e1, e2, e3, _) -> "memcpy ("^(CilHelper.s_exp e1)^", "^(CilHelper.s_exp e2)^", "^(CilHelper.s_exp e3)^")"
   | Memmove (e1, e2, e3, _) -> "memmove ("^(CilHelper.s_exp e1)^", "^(CilHelper.s_exp e2)^", "^(CilHelper.s_exp e3)^")"
   | Strcat (e1, e2, _) -> "strcat ("^(CilHelper.s_exp e1)^", "^(CilHelper.s_exp e2)^")"
+  | AllocSize (e, _) -> "alloc (" ^ CilHelper.s_exp e ^ ")"
 
 let location_of = function
   | ArrayExp (_,_,l)
@@ -41,7 +43,8 @@ let location_of = function
   | Strncpy (_, _, _, l)
   | Memcpy (_, _, _, l)
   | Memmove (_, _, _, l)
-  | Strcat (_, _, l) -> l
+  | Strcat (_, _, l)
+  | AllocSize (_, l) -> l
 
 (* NOTE: you may use Cil.addOffset or Cil.addOffsetLval instead of
    add_offset, append_field, and append_index. *)
@@ -104,16 +107,26 @@ let c_lib f es loc =
   | "strcat" -> (Strcat (List.nth es 0, List.nth es 1, loc)) :: (c_exps es loc)
   | _ -> []
 
+let c_lib_taint f es loc =
+  match f.vname with
+  | "mmap"
+  | "realloc" -> [AllocSize (List.nth es 1, loc)]
+  | "calloc" -> [AllocSize (List.nth es 0, loc)]
+  | _ -> []
+
 let rec collect : IntraCfg.cmd -> t list
 =fun cmd ->
   match cmd with
   | Cmd.Cset (lv,e,loc) -> (c_lv lv loc) @ (c_exp e loc)
   | Cmd.Cexternal (lv,loc) -> c_lv lv loc
+  | Cmd.Calloc (lv,Array e,_,loc) when !Options.taint -> [AllocSize (e, loc)]
   | Cmd.Calloc (lv,Array e,_,loc) -> (c_lv lv loc) @ (c_exp e loc)
   | Cmd.Csalloc (lv,_,loc) -> c_lv lv loc
   | Cmd.Cassume (e,loc) -> c_exp e loc
   | Cmd.Creturn (Some e, loc) -> c_exp e loc
   | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc) when List.mem f.vname query_lib -> c_lib f es loc
+  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc) when !Options.taint ->
+    c_lib_taint f es loc
   | Cmd.Ccall (None,e,es,loc) -> (c_exp e loc) @ (c_exps es loc)
   | Cmd.Ccall (Some lv,e,es,loc) -> (c_lv lv loc) @ (c_exp e loc) @ (c_exps es loc)
   | _ -> []

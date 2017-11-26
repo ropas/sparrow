@@ -30,6 +30,10 @@ val oct : bool ref
 val pack_impact : bool ref
 val pack_manual : bool ref
 
+(** {2 Taint Analysis } *)
+
+val taint : bool ref
+
 (** {2 Unsoundness } *)
 
 val unsound_loop : string BatSet.t ref

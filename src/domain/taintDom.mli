@@ -8,29 +8,28 @@
 (* See the LICENSE file for details.                                   *)
 (*                                                                     *)
 (***********************************************************************)
-(** Abstract domains of interval analysis *)
-module Val : sig
-  include AbsDom.CPO
+(** Abstract domains of taint analysis *)
+module IntOverflow : sig
+  type t = Bot | Top
+  include AbsDom.LAT with type t := t
+  val is_bot : t -> bool
+end
 
-  val null : t
-  val make : (Itv.t * BasicDom.PowLoc.t * ArrayBlk.t * StructBlk.t * BasicDom.PowProc.t) -> t
-  val itv_of_val : t -> Itv.t
-  val pow_loc_of_val : t -> BasicDom.PowLoc.t
-  val array_of_val : t -> ArrayBlk.t
-  val struct_of_val : t -> StructBlk.t
-  val pow_proc_of_val : t -> BasicDom.PowProc.t
-  val allocsites_of_val : t -> BasicDom.Allocsite.t BatSet.t
-  val all_loc_of_val : t -> BasicDom.PowLoc.t
-  val of_itv : Itv.t -> t
-  val of_pow_loc : BasicDom.PowLoc.t -> t
-  val of_array : ArrayBlk.t -> t
-  val of_struct : StructBlk.t -> t
-  val of_pow_proc : BasicDom.PowProc.t -> t
-  val modify_itv : Itv.t -> t -> t
-  val modify_arr : ArrayBlk.t -> t -> t
-  val external_value : BasicDom.Allocsite.t -> t
-  val itv_top : t
-  val cast : Cil.typ -> Cil.typ -> t -> t
+module UserInput : sig
+  module Source : sig type t = BasicDom.Node.t * Cil.location end
+  include PowDom.LAT with type elt = Source.t
+  val is_taint : t -> bool
+end
+
+module Val : sig
+  type t = {
+    int_overflow : IntOverflow.t;
+    user_input : UserInput.t;
+  }
+  include AbsDom.LAT with type t := t
+  val int_overflow : t -> IntOverflow.t
+  val user_input : t -> UserInput.t
+  val input_value : BasicDom.Node.t -> Cil.location -> t
 end
 
 module Mem : sig
@@ -39,8 +38,3 @@ module Mem : sig
   val strong_update : BasicDom.PowLoc.t -> Val.t -> t -> t
   val weak_update : BasicDom.PowLoc.t -> Val.t -> t -> t
 end with type A.t = BasicDom.Loc.t and type B.t = Val.t and type PowA.t = BasicDom.PowLoc.t
-
-module Table : MapDom.CPO with
-  type t = MapDom.MakeCPO(BasicDom.Node)(Mem).t
-  and type A.t = BasicDom.Node.t
-  and type B.t = Mem.t
