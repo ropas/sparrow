@@ -66,7 +66,7 @@ let rec c_offset : Cil.lval -> Cil.offset -> Cil.location -> t list
     (ArrayExp (lv, e, loc)) :: (c_exp e loc)
     @ (c_offset (append_index lv e) o loc)
 
-and  c_lv : Cil.lval -> Cil.location -> t list
+and c_lv : Cil.lval -> Cil.location -> t list
 =fun lv loc ->
   match lv with
   | Var v, offset   -> c_offset (Var v, NoOffset) offset loc
@@ -93,6 +93,15 @@ and c_exp : Cil.exp -> Cil.location -> t list
 
 and c_exps exps loc = List.fold_left (fun q e -> q @ (c_exp e loc)) [] exps
 
+let c_lib f es loc =
+  match f.vname with
+  | "strcpy" -> (Strcpy (List.nth es 0, List.nth es 1, loc)) :: (c_exps es loc)
+  | "memcpy" -> (Memcpy (List.nth es 0, List.nth es 1, List.nth es 2, loc))::(c_exps es loc)
+  | "memmove" -> (Memmove (List.nth es 0, List.nth es 1, List.nth es 2, loc))::(c_exps es loc)
+  | "strncpy" -> (Strncpy (List.nth es 0, List.nth es 1, List.nth es 2, loc))::(c_exps es loc)
+  | "strcat" -> (Strcat (List.nth es 0, List.nth es 1, loc)) :: (c_exps es loc)
+  | _ -> []
+
 let rec collect : IntraCfg.cmd -> t list
 =fun cmd ->
   match cmd with
@@ -102,16 +111,7 @@ let rec collect : IntraCfg.cmd -> t list
   | Cmd.Csalloc (lv,_,loc) -> c_lv lv loc
   | Cmd.Cassume (e,loc) -> c_exp e loc
   | Cmd.Creturn (Some e, loc) -> c_exp e loc
-  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc)
-    when f.vname = "strcpy" -> (Strcpy (List.nth es 0, List.nth es 1, loc)) :: (c_exps es loc)
-  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc)
-    when f.vname = "memcpy" -> (Memcpy (List.nth es 0, List.nth es 1, List.nth es 2, loc))::(c_exps es loc)
-  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc)
-    when f.vname = "memmove" -> (Memmove (List.nth es 0, List.nth es 1, List.nth es 2, loc))::(c_exps es loc)
-  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc)
-    when f.vname = "strncpy" -> (Strncpy (List.nth es 0, List.nth es 1, List.nth es 2, loc))::(c_exps es loc)
-  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc)
-    when f.vname = "strcat" -> (Strcat (List.nth es 0, List.nth es 1, loc)) :: (c_exps es loc)
+  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc) -> c_lib f es loc
   | Cmd.Ccall (None,e,es,loc) -> (c_exp e loc) @ (c_exps es loc)
   | Cmd.Ccall (Some lv,e,es,loc) -> (c_lv lv loc) @ (c_exp e loc) @ (c_exps es loc)
   | _ -> []
