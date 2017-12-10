@@ -93,6 +93,8 @@ and c_exp : Cil.exp -> Cil.location -> t list
 
 and c_exps exps loc = List.fold_left (fun q e -> q @ (c_exp e loc)) [] exps
 
+let query_lib = ["strcpy"; "memcpy"; "memmove"; "strncpy"; "strcat"]
+
 let c_lib f es loc =
   match f.vname with
   | "strcpy" -> (Strcpy (List.nth es 0, List.nth es 1, loc)) :: (c_exps es loc)
@@ -111,7 +113,7 @@ let rec collect : IntraCfg.cmd -> t list
   | Cmd.Csalloc (lv,_,loc) -> c_lv lv loc
   | Cmd.Cassume (e,loc) -> c_exp e loc
   | Cmd.Creturn (Some e, loc) -> c_exp e loc
-  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc) -> c_lib f es loc
+  | Cmd.Ccall (_, Lval (Var f, NoOffset), es, loc) when List.mem f.vname query_lib -> c_lib f es loc
   | Cmd.Ccall (None,e,es,loc) -> (c_exp e loc) @ (c_exps es loc)
   | Cmd.Ccall (Some lv,e,es,loc) -> (c_lv lv loc) @ (c_exp e loc) @ (c_exps es loc)
   | _ -> []
