@@ -20,6 +20,11 @@ val flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c
 val cond : bool -> ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b
 val opt : bool -> ('a -> 'a) -> 'a -> 'a
 val tuple : 'a -> 'a * 'a
+
+val compare_string : string -> string -> int
+val compare_bool : bool -> bool -> int
+val compare_int : int -> int -> int
+
 val domof : ('a, 'b) BatMap.t -> 'a BatSet.t
 val list_fold : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 val list_fold2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c

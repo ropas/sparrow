@@ -21,6 +21,10 @@ let cond c f g x = if c then f x else g x
 let opt c f x = if c then f x else x
 let tuple x = (x, x)
 
+let compare_string = Base.compare_string
+let compare_bool = Base.compare_bool
+let compare_int = Base.compare_int
+
 let domof m = BatMap.foldi (fun k _ set -> BatSet.add k set) m BatSet.empty
 
 (** This applies [List.fold_left], but the argument type is the same with
