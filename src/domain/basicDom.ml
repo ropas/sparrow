@@ -82,9 +82,13 @@ struct
       let c = Proc.compare p1 p2 in
       if c = 0 then String.compare l1 l2 else c
     | Allocsite a1, Allocsite a2 -> Allocsite.compare a1 a2
-    | Field (l1, f1, _), Field (l2, f2, _) ->
+    | Field (l1, f1, t1), Field (l2, f2, t2) ->
       let c = compare l1 l2 in
-      if c = 0 then String.compare f1 f2 else c
+      if c = 0 then
+        let c = String.compare f1 f2 in
+        if c = 0 then Pervasives.compare (Cil.typeSig t1) (Cil.typeSig t2)
+        else c
+      else c
     | _, _ -> Pervasives.compare (tag_of_t x) (tag_of_t y)
   and tag_of_t = function GVar _ -> 0 | LVar _ -> 1 | Allocsite _ -> 2 | Field _ -> 3
 
