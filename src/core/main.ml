@@ -22,7 +22,7 @@ let transform : Global.t -> Global.t
 = fun global ->
   let loop_transformed = UnsoundLoop.transform global in
   let inlined = Frontend.inline global in
-  if loop_transformed || inlined then   (* something transformed *)
+  if not !Options.il && (loop_transformed || inlined) then   (* something transformed *)
     Frontend.makeCFGinfo global.file    (* NOTE: CFG must be re-computed after transformation *)
     |> StepManager.stepf true "Translation to graphs (after inline)" Global.init
     |> StepManager.stepf true "Pre-analysis (after inline)" PreAnalysis.perform
@@ -44,9 +44,12 @@ let print_pgm_info : Global.t -> Global.t
   prerr_endline ("#Nodes : " ^ string_of_int (List.length nodes));
   global
 
-let print_il : Global.t -> Global.t
-= fun global ->
-  Cil.dumpFile !Cil.printerForMaincil stdout "" global.file;
+let print_il file =
+  (if !Options.inline = [] && BatSet.is_empty !Options.unsound_loop then
+    Cil.dumpFile !Cil.printerForMaincil stdout "" (transform_simple file)
+  else
+    let global = init_analysis file in
+    Cil.dumpFile !Cil.printerForMaincil stdout "" global.file);
   exit 0
 
 let print_cfg : Global.t -> Global.t
@@ -94,9 +97,9 @@ let main () =
   try
     StepManager.stepf true "Front-end" Frontend.parse ()
     |> Frontend.makeCFGinfo
+    |> opt !Options.il print_il
     |> init_analysis
     |> print_pgm_info
-    |> opt !Options.il print_il
     |> opt !Options.cfg print_cfg
     |> extract_feature
     |> StepManager.stepf true "Itv Sparse Analysis" ItvAnalysis.do_analysis
