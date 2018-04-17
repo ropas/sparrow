@@ -92,6 +92,57 @@ let string_of_query q =
    | _ -> "") ^ "  " ^
   q.desc ^ " " ^ status_to_string (get_status [q])
 
+let filter_extern partition =
+  BatMap.filterv (fun ql ->
+      not (List.exists (fun q ->
+          match q.allocsite with
+          | Some allocsite -> Allocsite.is_ext_allocsite allocsite
+          | None -> false) ql)) partition
+
+let filter_global partition =
+  BatMap.filterv (fun ql ->
+      not (List.exists (fun q ->
+          InterCfg.Node.get_pid q.node = InterCfg.global_proc) ql)) partition
+
+let filter_lib partition =
+  BatMap.filterv (fun ql ->
+      not (List.exists (fun q ->
+          match q.exp with
+          | AlarmExp.Strcpy (_, _, _) | AlarmExp.Strcat (_, _, _)
+          | AlarmExp.Strncpy (_, _, _, _) | AlarmExp.Memcpy (_, _, _, _)
+          | AlarmExp.Memmove (_, _, _, _) -> true
+          | _ -> false) ql)) partition
+
+let filter_rec global partition =
+  BatMap.filterv (fun ql ->
+      not (List.exists (fun q ->
+          Global.is_rec (InterCfg.Node.get_pid q.node) global) ql)) partition
+
+let filter_complex_exp partition =
+  BatMap.filterv (fun ql ->
+      not (List.exists (fun q ->
+        match q.exp with
+        | AlarmExp.ArrayExp (_, BinOp (bop, _, _, _), _) -> bop = BAnd || bop = BOr || bop = BXor
+        | AlarmExp.ArrayExp (_, Lval (Var vi, _), _) -> vi.vglob
+        | AlarmExp.DerefExp (Lval (Var vi, _), _) -> vi.vglob
+        | _ -> false) ql)) partition
+
+let filter_allocsite partition =
+  BatMap.filterv (fun ql ->
+      not (List.exists (fun q ->
+          match q.allocsite with
+          | Some allocsite -> BatSet.mem (Allocsite.to_string allocsite) !Options.filter_allocsite
+          | None -> false) ql)) partition
+
+let alarm_filter global part =
+  part
+  |> opt !Options.filter_extern filter_extern
+  |> opt !Options.filter_global filter_global
+  |> opt !Options.filter_lib filter_lib
+  |> opt !Options.filter_complex_exp filter_complex_exp
+  |> opt !Options.filter_rec (filter_rec global)
+  |> opt (not (BatSet.is_empty !Options.filter_allocsite)) filter_allocsite
+
 let display_alarms title alarms_part =
   prerr_endline "";
   prerr_endline ("= " ^ title ^ " =");
@@ -112,10 +163,9 @@ let display_alarms title alarms_part =
     ) qs
   ) alarms_part
 
-let print : query list -> unit
-=fun queries ->
+let print global queries =
   let all = partition queries in
-  let unproven = partition (get queries UnProven) in
+  let unproven = partition (get queries UnProven) |> alarm_filter global in
   let bot = partition (get queries BotAlarm) in
   if not !Options.noalarm then
     begin
@@ -128,7 +178,6 @@ let print : query list -> unit
   prerr_endline ("#proven                  : " ^ i2s (BatSet.cardinal (get_proved_query_point queries)));
   prerr_endline ("#unproven                : " ^ i2s (BatMap.cardinal unproven));
   prerr_endline ("#bot-involved            : " ^ i2s (BatMap.cardinal bot))
-
 
 let print_raw : bool -> query list -> unit
 =fun summary_only queries ->

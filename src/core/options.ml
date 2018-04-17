@@ -58,7 +58,12 @@ let bo = ref true
 let nd = ref false
 let dz = ref false
 let show_all_query = ref false
-
+let filter_extern = ref false
+let filter_global = ref false
+let filter_lib = ref false
+let filter_complex_exp = ref false
+let filter_rec = ref false
+let filter_allocsite = ref BatSet.empty
 
 (* Marshaling *)
 let marshal_in = ref false
@@ -107,6 +112,18 @@ let opts =
   ("-no_scaffold", (Arg.Clear scaffold), "Do not use scaffolding semantics");
   ("-nobar", (Arg.Set nobar), "No progress bar");
   ("-show_all_query", (Arg.Set show_all_query), "Show all queries");
+  ("-filter_alarm", (Arg.Unit (fun () ->
+       filter_complex_exp := true;
+       filter_extern := true;
+       filter_global := true;
+       filter_lib := true;
+       filter_rec := true)), "Trun on all the filtering options");
+  ("-filter_allocsite", (Arg.String (fun s -> filter_allocsite := BatSet.add s !filter_allocsite)), "Filter alarms from a given allocsite");
+  ("-filter_complex_exp", (Arg.Set filter_complex_exp), "Filter alarms from complex expressions (e.g., bitwise)");
+  ("-filter_extern", (Arg.Set filter_extern), "Filter alarms from external allocsites");
+  ("-filter_global", (Arg.Set filter_global), "Filter alarms from the global area");
+  ("-filter_lib", (Arg.Set filter_lib), "Filter alarms from library calls (e.g., strcpy)");
+  ("-filter_rec", (Arg.Set filter_rec), "Filter alarms from recursive call cycles");
   ("-optil", (Arg.Set optil), "Optimize IL (default)");
   ("-no_optil", (Arg.Clear optil), "Do not optimize IL");
   ("-marshal_in", (Arg.Set marshal_in), "Read analysis results from marshaled data");

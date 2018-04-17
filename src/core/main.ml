@@ -64,10 +64,9 @@ let finish t0 () =
   Profiler.report stdout;
   my_prerr_endline (string_of_float (Sys.time () -. t0))
 
-let octagon_analysis : Global.t * ItvAnalysis.Table.t * ItvAnalysis.Table.t * Report.query list -> Report.query list
-= fun (global,itvinputof,_,_) ->
+let octagon_analysis (global,itvinputof,_,_) =
   StepManager.stepf true "Oct Sparse Analysis" OctAnalysis.do_analysis (global,itvinputof)
-  |> (fun (_,_,_,alarm) -> alarm)
+  |> (fun (global,_,_,alarm) -> (global, alarm))
 
 let extract_feature : Global.t -> Global.t
 = fun global ->
@@ -103,8 +102,8 @@ let main () =
     |> opt !Options.cfg print_cfg
     |> extract_feature
     |> StepManager.stepf true "Itv Sparse Analysis" ItvAnalysis.do_analysis
-    |> cond !Options.oct octagon_analysis (fun (_,_,_,alarm) -> alarm)
-    |> Report.print
+    |> cond !Options.oct octagon_analysis (fun (global,_,_,alarm) -> (global, alarm))
+    |> (fun (global, alarm) -> Report.print global alarm)
     |> finish t0
   with exc ->
     prerr_endline (Printexc.to_string exc);
