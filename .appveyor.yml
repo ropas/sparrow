@@ -1,0 +1,11 @@
+image: ubuntu
+
+build: off
+
+install:
+  - sudo apt-get update
+  - sudo apt-get install ocaml ocaml-native-compilers camlp4-extra opam -y
+  - ./build.sh
+
+test_script:
+  - make test

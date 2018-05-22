@@ -1,20 +1,17 @@
 sudo: required
+
 language: c
+
 os:
-  - linux
   - osx
+
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew unlink python; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install opam; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:avsm/ppa -y; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install ocaml ocaml-native-compilers camlp4-extra opam -y; fi
-  - opam init -y
-  - opam switch 4.04.0
-  - eval `opam config env`
-  - opam update
-  - opam install -y depext
+  - brew update
+  - brew unlink python
+  - brew install opam
+
 install:
-  - opam pin add -y --no-action sparrow .
-  - opam depext --install sparrow -y
+  - ./build.sh
+
+script:
+  - make test

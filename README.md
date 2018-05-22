@@ -9,7 +9,7 @@ This is the academic version of Sparrow that is different from the [commercial v
 ## Build Status
 Linux|MAC OSX
 -----|-------
-[![Build Status](https://travis-ci.org/ropas/sparrow.svg?branch=master)](https://travis-ci.org/ropas/sparrow)|[![Build Status](https://travis-ci.org/ropas/sparrow.svg?branch=master)](https://travis-ci.org/ropas/sparrow)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/ropas/sparrow?branch=master&svg=true)](https://ci.appveyor.com/api/projects/status/github/ropas/sparrow)|[![Build Status](https://travis-ci.org/ropas/sparrow.svg?branch=master)](https://travis-ci.org/ropas/sparrow)
  
 ## Sparrow Dependencies
 To build Sparrow, you need
