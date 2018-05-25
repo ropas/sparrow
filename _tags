@@ -19,5 +19,6 @@ true: annot, bin_annot
 # Executable test
 # OASIS_STOP
 <src/*>: include
-true: pkg_cil, pkg_ocamlgraph, pkg_yojson, pkg_batteries, pkg_apron, pkg_apron.octMPQ, pkg_lymp, pkg_ppx_compare
-true: thread
+true: pkg_apron, pkg_apron.octMPQ, pkg_batteries, pkg_cil, pkg_cil.all-features
+true: pkg_lymp, pkg_ocamlgraph, pkg_ppx_compare, pkg_ppx_compare, pkg_threads
+true: pkg_yojson

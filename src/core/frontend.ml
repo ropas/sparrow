@@ -37,7 +37,7 @@ let parseOneFile : string -> C.file
   (* PARSE and convert to CIL *)
   if !Cilutil.printStages then ignore (E.log "Parsing %s\n" fname);
   let cil = F.parse fname () in
-  if (not !Epicenter.doEpicenter) then (
+  if not (Feature.enabled "epicenter") then (
     (Rmtmps.removeUnusedTemps cil)
   );
   cil
