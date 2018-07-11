@@ -55,7 +55,7 @@ module H = Hashtbl
 module IH = Inthash
 module A = Alpha
 
-let debug = true
+let debug = false
 
 exception Recursion (* Used to signal recursion *)
 
