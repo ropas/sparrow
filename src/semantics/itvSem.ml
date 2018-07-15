@@ -310,7 +310,7 @@ let model_alloc_one mode spec pid lvo f (mem, global) =
   | Some lv ->
     let size = try Itv.of_int (return_struct_type f |> CilHelper.byteSizeOf) with _ -> Itv.top in
     let allocsite = Allocsite.allocsite_of_ext (Some f.vname) in
-    let arr_val = ItvDom.Val.of_array (ArrayBlk.make allocsite Itv.zero size Itv.one Itv.nat) in
+    let arr_val = ItvDom.Val.of_array (ArrayBlk.make allocsite Itv.zero Itv.one size Itv.nat) in
     let ext_loc = PowLoc.singleton (Loc.of_allocsite allocsite) in
     let mem = update mode spec global (eval_lv ~spec pid lv mem) arr_val mem in
     let mem = update mode spec global ext_loc Val.itv_top mem in
