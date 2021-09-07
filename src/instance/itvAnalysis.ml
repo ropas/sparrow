@@ -128,7 +128,7 @@ let inspect_aexp_bo : InterCfg.node -> AlarmExp.t -> Mem.t -> query list -> quer
     | Memmove (e1, e2, e3, loc) ->
         let v1 = ItvSem.eval (InterCfg.Node.get_pid node) e1 mem in
         let v2 = ItvSem.eval (InterCfg.Node.get_pid node) e2 mem in
-        let e3_1 = Cil.BinOp (Cil.MinusA, e3, Cil.mone, Cil.intType) in
+        let e3_1 = Cil.BinOp (Cil.MinusA, e3, Cil.one, Cil.intType) in
         let v3 = ItvSem.eval (InterCfg.Node.get_pid node) e3_1 mem in
         let lst1 = check_bo v1 (Some v3) in
         let lst2 = check_bo v2 (Some v3) in
