@@ -393,7 +393,8 @@ let model_strlen mode spec pid (lvo, exps) (mem, global) =
   | (Some lv, str::_) ->
     let str_val = eval ~spec pid str mem in
     let null_pos = ArrayBlk.nullof (ItvDom.Val.array_of_val str_val) in
-    let v = Val.of_itv (Itv.meet Itv.nat null_pos) in
+    let offset = ArrayBlk.offsetof (ItvDom.Val.array_of_val str_val) in
+    let v = Val.of_itv (Itv.meet Itv.nat (Itv.minus null_pos offset)) in
     (update mode spec global (eval_lv ~spec pid lv mem) v mem, global)
   | _ -> (mem,global)
 
